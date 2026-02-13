@@ -1,0 +1,11 @@
+{
+  "domain": "petrochina_gas",
+  "name": "昆仑燃气",
+  "icon": "mdi:fire",
+  "codeowners": ["@claudian"],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "ssdp": [],
+  "zeroconf": [],
+  "version": "1.0.0"
+}

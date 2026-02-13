@@ -1,0 +1,69 @@
+# 昆仑燃气统计集成服务配置
+---
+name: "昆明燃气统计"
+description: "昆明燃气用户数据统计和监控"
+
+---
+# 配置流程schema
+config_flow:
+
+  # 第一步：微信授权登录（可选）
+  [wechat_auth]
+    name: 微信授权登录
+    description: 扫描微信小程序授权码进行登录（可选，也可以跳过直接使用公开API）
+    fields:
+      wechat_code:
+        name: 微信授权码
+        description: 扫描微信小程序后获得的授权码（留空则跳过登录）
+        required: false
+        selector:
+          text:
+      show_get_code_button:
+        name: 获取授权码
+        description: 点击打开微信小程序扫描二维码获取授权码
+        selector:
+          boolean:
+          default: false
+
+  # 第二步：配置燃气账户
+  [user_config]
+    name: 配置燃气账户
+    description: 请输入户号和地区代码
+    fields:
+      user_code:
+        name: 户号
+        description: 您的燃气户号（8位数字）
+        required: true
+        selector:
+          text:
+      cid:
+        name: 地区代码
+        description: 昆明分公司的代码（默认为2，昆明分公司）
+        required: true
+        default: "2"
+        selector:
+          number:
+            mode: box
+            step: 1
+      terminal_type:
+        name: 终端类型
+        description: 终端类型（默认为7）
+        required: true
+        default: "7"
+        selector:
+          number:
+            mode: box
+            step: 1
+
+  # 第三步：确认创建集成
+  [confirm_create_entry]
+    name: 创建集成
+    description: 点击提交创建燃气统计集成
+    fields:
+      confirm:
+        name: 确认
+        description: 请确认以上信息正确
+        required: true
+        selector:
+          boolean:
+          default: false

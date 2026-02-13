@@ -1,0 +1,20 @@
+{
+  "domain": "china_southern_power_grid_stat",
+  "name": "China Southern Power Grid Statistics",
+  "codeowners": [
+    "@cubicpill"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/CubicPill/china_southern_power_grid_stat/",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/CubicPill/china_southern_power_grid_stat/issues",
+  "requirements": [
+    "pycryptodome",
+    "brotli"
+  ],
+  "ssdp": [],
+  "version": "1.2.0",
+  "zeroconf": []
+}
