@@ -17,16 +17,32 @@ CONF_ACCOUNTS = "accounts"
 CONF_SETTINGS = "settings"
 CONF_UPDATED_AT = "updated_at"
 CONF_ACTION = "action"
+CONF_UPDATE_INTERVAL = "update_interval"
 
+# ============================================================
 # Abort states
+# ============================================================
 ABORT_NO_ACCOUNT = "no_account"
 ABORT_ALL_ADDED = "all_added"
 
+# ============================================================
+# Config flow step names
+# ============================================================
+STEP_USER = "user"
+STEP_QR_LOGIN = "qr_login"
+STEP_VALIDATE_SMS_CODE = "validate_sms_code"
+STEP_ADD_ACCOUNT = "add_account"
+STEP_SETTINGS = "settings"
+STEP_INIT = "init"
+
+# ============================================================
 # Errors
+# ============================================================
 CONF_GENERAL_ERROR = "base"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 ERROR_INVALID_AUTH = "invalid_auth"
 ERROR_UNKNOWN = "unknown"
+ERROR_QR_NOT_SCANNED = "qr_not_scanned"
 
 # UI
 LOGIN_TYPE_WX_QR_APP_NAME = {

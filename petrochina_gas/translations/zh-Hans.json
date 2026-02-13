@@ -1,0 +1,61 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "账号已添加，请勿重复添加",
+            "reauth_successful": "重新登录成功"
+        },
+        "error": {
+            "cannot_connect": "网络异常",
+            "invalid_auth": "登录信息无效",
+            "qr_not_scanned": "扫描二维码并确认登录",
+            "unknown": "未知错误: {error_detail}"
+        },
+        "step": {
+            "add_account": {
+                "data": {
+                    "user_code": "燃气户号（8位数字）"
+                },
+                "description": "请输入您的燃气户号",
+                "title": "添加燃气户号"
+            },
+            "qr_login": {
+                "data": {
+                    "refresh_qr_code": "刷新二维码"
+                },
+                "description": "{description}",
+                "title": "扫码登录"
+            },
+            "reauth_confirm": {
+                "description": "登录状态已过期，请重新登录",
+                "title": "重新登录账号"
+            },
+            "user": {
+                "description": "选择用于登录昆仑燃气账号的方式",
+                "menu_options": {
+                    "qr_login": "微信小程序扫码登录"
+                },
+                "title": "选择登录方式"
+            }
+        }
+    },
+    "options": {
+        "abort": {
+            "all_added": "所有户号已添加",
+            "no_account": "账户未绑定户号"
+        },
+        "step": {
+            "add_account": {
+                "title": "选择户号"
+            },
+            "init": {
+                "title": "选择操作"
+            },
+            "settings": {
+                "data": {
+                    "update_interval": "更新间隔（秒）"
+                },
+                "title": "参数设置"
+            }
+        }
+    }
+}

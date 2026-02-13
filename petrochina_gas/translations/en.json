@@ -1,0 +1,61 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Account has already been configured",
+            "reauth_successful": "Reauthentication successful"
+        },
+        "error": {
+            "cannot_connect": "Network error",
+            "invalid_auth": "Invalid authentication",
+            "qr_not_scanned": "QR code not scanned, please try again",
+            "unknown": "Unknown error: {error_detail}"
+        },
+        "step": {
+            "add_account": {
+                "data": {
+                    "user_code": "Gas user code (8 digits)"
+                },
+                "description": "Please enter your gas user code",
+                "title": "Add gas account"
+            },
+            "qr_login": {
+                "data": {
+                    "refresh_qr_code": "Refresh QR code"
+                },
+                "description": "{description}",
+                "title": "Scan QR code to login"
+            },
+            "reauth_confirm": {
+                "description": "Login has expired, please log in again",
+                "title": "Re-authenticate account"
+            },
+            "user": {
+                "description": "Select a login method for PetroChina Gas account",
+                "menu_options": {
+                    "qr_login": "WeChat Mini Program QR Login"
+                },
+                "title": "Select login method"
+            }
+        }
+    },
+    "options": {
+        "abort": {
+            "all_added": "All accounts have been added",
+            "no_account": "No gas accounts linked"
+        },
+        "step": {
+            "add_account": {
+                "title": "Select user code"
+            },
+            "init": {
+                "title": "Select action"
+            },
+            "settings": {
+                "data": {
+                    "update_interval": "Update interval (seconds)"
+                },
+                "title": "Parameter settings"
+            }
+        }
+    }
+}

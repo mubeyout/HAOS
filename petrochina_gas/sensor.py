@@ -23,7 +23,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, List
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -34,7 +34,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -48,14 +48,8 @@ from .const import (
     CONF_TERMINAL_TYPE,
     CONF_ACCOUNTS,
     CONF_SETTINGS,
-    ERROR_INVALID_AUTH,
-    ERROR_CANNOT_CONNECT,
     SUFFIX_BAL,
-    SUFFIX_ARREARS,
-    SUFFIX_CUSTOMER_NAME,
     SUFFIX_ADDRESS,
-    SUFFIX_METER_READING,
-    SUFFIX_LAST_COMMUNICATION,
     SUFFIX_LADDER_STAGE,
     SUFFIX_DAILY_VOLUME,
     SUFFIX_DAILY_COST,
@@ -65,6 +59,8 @@ from .const import (
     SUFFIX_YEARLY_COST,
     SUFFIX_LAST_PAYMENT,
     SUFFIX_OWE_AMOUNT,
+    SUFFIX_METER_READING,
+    SUFFIX_LAST_COMMUNICATION,
     ATTR_KEY_LAST_UPDATE,
     ATTR_KEY_CUSTOMER_NAME,
     ATTR_KEY_ADDRESS,
@@ -94,7 +90,7 @@ class GasBaseSensor(CoordinatorEntity, SensorEntity):
         entity_suffix: str,
     ) -> None:
         """初始化传感器"""
-        SensorEntity.__init__(self, coordinator)
+        SensorEntity.__init__(self)
         CoordinatorEntity.__init__(self, coordinator)
         self._account_number = account_number
         self._entity_suffix = entity_suffix
@@ -423,12 +419,12 @@ class GasCoordinator(DataUpdateCoordinator):
         )
         self._config_entry = config_entry
         self._config = config_entry.data
-        self.data: dict[str, Any] = {}
+        self.data: Dict[str, Any] = {}
 
         # 存储每个账户的 HTTP 客户端
-        self._clients: dict[str, GasHttpClient] = {}
+        self._clients: Dict[str, GasHttpClient] = {}
         # 标记是否已登录
-        self._logged_in: dict[str, bool] = {}
+        self._logged_in: Dict[str, bool] = {}
 
     def _get_or_create_client(self, user_code: str, cid: int, terminal_type: int) -> GasHttpClient:
         """获取或创建HTTP客户端"""

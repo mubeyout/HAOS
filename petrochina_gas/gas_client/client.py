@@ -9,6 +9,8 @@ from typing import Optional, Tuple, Dict, Any
 from .const import (
     API_BASE,
     API_USER_AUTH,
+    API_CREATE_QR_CODE,
+    API_CHECK_QR_STATUS,
     API_GET_USER_DEBT,
     API_GET_CUSTOMER_INFO,
     API_GET_METER_READING,
@@ -23,6 +25,8 @@ from .const import (
     PARAM_PAGE_NUMBER,
     PARAM_CODE,
     PARAM_UNION_ID,
+    PARAM_LOGIN_ID,
+    PARAM_QR_CODE_DATA,
     FIELD_CODE,
     FIELD_DATA,
     FIELD_MESSAGE,
@@ -46,12 +50,12 @@ _LOGGER = logging.getLogger(__name__)
 class GasHttpClient:
     """昆仑燃气 HTTP 客户端"""
 
-    def __init__(self, user_code: str, cid: int, terminal_type: int = 7):
+    def __init__(self, user_code: Optional[str] = None, cid: int = 2, terminal_type: int = 7):
         """
         初始化客户端
 
         Args:
-            user_code: 燃气户号（8位数字）
+            user_code: 燃气户号（8位数字），可选（用于扫码登录时不需要）
             cid: 地区代码（默认为2，昆明分公司）
             terminal_type: 终端类型（默认为7）
         """
@@ -479,7 +483,7 @@ class GasHttpClient:
             _LOGGER.error(f"Failed to create QR code: {err}")
             raise
 
-    def check_qr_login_status(self, login_id: str) -> tuple[bool, str | None]:
+    def check_qr_login_status(self, login_id: str) -> Tuple[bool, Optional[str]]:
         """
         查询二维码扫描状态
 

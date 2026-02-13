@@ -1,0 +1,14 @@
+{
+  "domain": "petrochina_gas",
+  "name": "PetroChina Gas Statistics",
+  "codeowners": ["@claudian"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/claudian/petrochina-gas/",
+  "icon": "mdi:fire",
+  "iot_class": "local_polling",
+  "requirements": [],
+  "ssdp": [],
+  "version": "1.0.0",
+  "zeroconf": []
+}
