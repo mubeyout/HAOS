@@ -1,16 +1,23 @@
 """Constants for Gas API Client."""
 
-# API Endpoints
+# API Endpoints (根据抓包数据修正)
 API_USER_AUTH = "/api/v1/open/wechat/userAuthorization"
 API_CREATE_QR_CODE = "/api/v1/open/wechat/createQRCode"
 API_CHECK_QR_STATUS = "/api/v1/open/wechat/checkQRCodeStatus"
 API_GET_USER_DEBT = "/api/v1/open/recharge/getUserDebtByUserCode"
+API_GET_USER_DEBT_AUTH = "/api/v1/close/recharge/getUserDebt"  # 需要认证的版本，返回 userCodeList
 API_GET_CUSTOMER_INFO = "/api/v1/close/user/getUserCode"
 API_GET_METER_READING = "/api/v1/close/recharge/smartMeterGasDaysRecords"
 API_GET_PAYMENT_RECORDS = "/api/v1/close/recharge/getPaymentRecordList"
 API_GET_MONTHLY_VOLUME = "/api/v1/close/recharge/getMonthlyTotalGasVolume"
+# Token refresh - userAuthorization endpoint (may accept refreshToken)
+API_REFRESH_TOKEN = "/api/v1/open/wechat/userAuthorization"
+# Password login endpoints (web version)
+API_PASSWORD_LOGIN = "/api/v1/open/user/passwordLogin"
+API_GET_COMPANIES = "/api/v1/open/company/list"
+API_GET_RSA_PUBLIC_KEY = "/api/v1/open/encrypt/getRSA"
 
-# Request Parameters
+# Request Parameters (根据抓包数据修正)
 PARAM_CID = "cid"
 PARAM_USER_CODE = "userCode"
 PARAM_TERMINAL_TYPE = "terminalType"
@@ -22,6 +29,11 @@ PARAM_CODE = "code"
 PARAM_UNION_ID = "unionId"
 PARAM_LOGIN_ID = "loginId"
 PARAM_QR_CODE_DATA = "qrCodeData"
+PARAM_LENGTH_TIME_YQQS = "lengthTimeYqqs"
+PARAM_TIMESTAMP = "timestamp"
+
+# Fixed values from HAR analysis
+DEFAULT_CID_NATIONWIDE = "99999"  # 全国查询
 
 # Response Fields
 FIELD_CODE = "code"

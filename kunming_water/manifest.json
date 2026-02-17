@@ -1,0 +1,11 @@
+{
+    "domain": "kunming_water",
+    "name": "Kunming Water",
+    "code": "kunming_water",
+    "config_flow": true,
+    "dependencies": [],
+    "version": "1.0.0",
+    "documentation": "https://github.com/your-repo/kunming-water",
+    "requirements": ["aiohttp"],
+    "ssdp": "install-4"
+}

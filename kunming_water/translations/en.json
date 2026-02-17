@@ -1,0 +1,69 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "配置昆明水务账户",
+                "description": "请输入您的昆明水务账户信息"
+            },
+            "user_code": {
+                "label": "户号"
+            },
+            "mobile": {
+                "label": "手机号"
+            },
+            "password": {
+                "label": "登录密码"
+            }
+        },
+        "error": {
+            "invalid_user_code": "无效的户号",
+            "invalid_mobile": "无效的手机号",
+            "invalid_password": "无效的密码",
+            "cannot_connect": "无法连接到昆明水务服务器",
+            "invalid_auth": "认证失败"
+        }
+    },
+    "entity": {
+        "sensor": {
+            "kunming_water": {
+                "name": "昆明水务"
+            },
+            "user_name": {
+                "name": "用户名"
+            },
+            "address": {
+                "name": "地址"
+            },
+            "monthly_usage": {
+                "name": "本月用水量",
+                "state_attributes": {
+                    "unit_of_measurement": {
+                        "state": {
+                            "m³": "立方米"
+                        }
+                    }
+                }
+            },
+            "daily_usage": {
+                "name": "最近一日用水量",
+                "state_attributes": {
+                    "unit_of_measurement": {
+                        "state": {
+                            "m³": "立方米"
+                        }
+                    }
+                }
+            },
+            "last_payment": {
+                "name": "上次缴费金额",
+                "state_attributes": {
+                    "unit_of_measurement": {
+                        "state": {
+                            "CNY": "元"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

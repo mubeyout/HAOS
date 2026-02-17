@@ -27,6 +27,7 @@ class GasAccount:
     mdm_code: str
     reading_last_time: str
     remote_meter_last_communication_time: str
+    user_code_id: Optional[str] = None  # 用于缴费记录等需要认证的接口
 
 
 @dataclass

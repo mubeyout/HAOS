@@ -12,6 +12,18 @@ CONF_USER_CODE = "user_code"
 CONF_CID = "cid"
 CONF_TERMINAL_TYPE = "terminal_type"
 
+# Authentication credentials (from抓包分析)
+CONF_TOKEN = "token"
+CONF_REFRESH_TOKEN = "refresh_token"
+CONF_MDM_CODE = "mdm_code"
+CONF_OPEN_ID = "open_id"
+CONF_UNION_ID = "union_id"
+CONF_WECHAT_CODE = "wechat_code"
+# Password login (web version)
+CONF_MOBILE = "mobile"
+CONF_PASSWORD = "password"
+CONF_COMPANY_ID = "company_id"
+
 # electricity accounts -> gas accounts
 CONF_ACCOUNTS = "accounts"
 CONF_SETTINGS = "settings"
@@ -29,9 +41,7 @@ ABORT_ALL_ADDED = "all_added"
 # Config flow step names
 # ============================================================
 STEP_USER = "user"
-STEP_QR_LOGIN = "qr_login"
-STEP_VALIDATE_SMS_CODE = "validate_sms_code"
-STEP_ADD_ACCOUNT = "add_account"
+STEP_ADD_ACCOUNT_DIRECT = "add_account_direct"
 STEP_SETTINGS = "settings"
 STEP_INIT = "init"
 
@@ -42,12 +52,6 @@ CONF_GENERAL_ERROR = "base"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 ERROR_INVALID_AUTH = "invalid_auth"
 ERROR_UNKNOWN = "unknown"
-ERROR_QR_NOT_SCANNED = "qr_not_scanned"
-
-# UI
-LOGIN_TYPE_WX_QR_APP_NAME = {
-    "wx_qr": "微信小程序",
-}
 
 # ============================================================
 # API Endpoints
@@ -55,7 +59,7 @@ LOGIN_TYPE_WX_QR_APP_NAME = {
 API_BASE = "https://bol.grs.petrochina.com.cn"
 
 # Open API (no authentication required)
-API_OPEN_USER_AUTH = f"{API_BASE}/api/v1/open/weixin/userAuthorization"
+API_OPEN_USER_AUTH = f"{API_BASE}/api/v1/open/wechat/userAuthorization"
 API_OPEN_GET_USER_DEBT = f"{API_BASE}/api/v1/open/recharge/getUserDebtByUserCode"
 
 # Close API (authentication may be required)
@@ -135,8 +139,6 @@ SUFFIX_METER_READING = "meter_reading"
 SUFFIX_LAST_COMMUNICATION = "last_communication"
 
 # Usage statistics
-SUFFIX_DAILY_VOLUME = "daily_volume"
-SUFFIX_DAILY_COST = "daily_cost"
 SUFFIX_MONTHLY_VOLUME = "monthly_volume"
 SUFFIX_MONTHLY_COST = "monthly_cost"
 SUFFIX_YEARLY_VOLUME = "yearly_volume"
@@ -153,7 +155,17 @@ SUFFIX_ADDRESS = "address"
 
 # Payment info
 SUFFIX_LAST_PAYMENT = "last_payment"
+SUFFIX_LAST_PAYMENT_DATE = "last_payment_date"
 SUFFIX_OWE_AMOUNT = "owe_amount"
+
+# New sensors based on PRD
+SUFFIX_CURRENT_MONTH_COST = "current_month_cost"
+SUFFIX_CURRENT_MONTH_VOLUME = "current_month_volume"  # 本月用量
+SUFFIX_LAST_DAY_USAGE = "last_day_usage"
+SUFFIX_LAST_DAY_USAGE_TIME = "last_day_usage_time"
+SUFFIX_LAST_DAY_USAGE_COST = "last_day_usage_cost"  # 最近一日用气费用
+SUFFIX_RECENT_MONTHLY_COST = "recent_monthly_cost"  # 近31天费用
+SUFFIX_RECENT_MONTHLY_USAGE = "recent_monthly_usage"  # 近31天累计用量
 
 # ============================================================
 # Sensor Attributes Keys
@@ -166,11 +178,12 @@ ATTR_KEY_ACCOUNT_ID = "account_id"
 # Meter information
 ATTR_KEY_METER_TYPE = "meter_type"
 
-# Ladder pricing
-ATTR_KEY_LADDER_1 = "ladder_1"
-ATTR_KEY_LADDER_2 = "ladder_2"
-ATTR_KEY_LADDER_3 = "ladder_3"
-ATTR_KEY_CURRENT_LADDER = "current_ladder"
+# Ladder pricing - optimized
+ATTR_KEY_LADDER_STAGE = "ladder_stage"
+ATTR_KEY_LADDER_UNIT_PRICE = "ladder_unit_price"
+ATTR_KEY_RECENT_USAGE = "recent_usage"
+ATTR_KEY_LAST_PAYMENT_DATE = "last_payment_date"
+ATTR_KEY_LAST_PAYMENT_AMOUNT = "last_payment_amount"
 
 # Update timestamps
 ATTR_KEY_LAST_UPDATE = "last_update"

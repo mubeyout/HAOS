@@ -2,61 +2,62 @@
   "config": {
     "step": {
       "user": {
-        "title": "选择登录方式",
-        "description": "选择用于登录昆仑燃气账号的方式",
-        "menu_options": {
-          "qr_login": "微信小程序扫码登录"
+        "title": "配置昆仑燃气",
+        "description": "请输入您的燃气户号信息和登录凭证",
+        "data": {
+          "user_code": "燃气户号（8位数字，必填）",
+          "cid": "地区代码（必填，默认2=昆明）",
+          "mobile": "手机号（必填，用于自动登录获取数据）",
+          "password": "登录密码（必填）"
         }
       },
-      "qr_login": {
-        "title": "扫码登录",
+      "add_account_direct": {
+        "title": "直接输入户号",
         "description": "{description}",
         "data": {
-          "refresh_qr_code": "刷新二维码"
+          "user_code": "燃气户号（8位数字，必填）",
+          "cid": "地区代码（必填，默认2=昆明）",
+          "mobile": "手机号（必填，用于自动登录获取数据）",
+          "password": "登录密码（必填）"
         }
-      },
-      "add_account": {
-        "title": "添加燃气户号",
-        "description": "请输入您的燃气户号",
-        "data": {
-          "user_code": "燃气户号（8位数字）"
-        }
-      },
-      "reauth_confirm": {
-        "title": "重新登录账号",
-        "description": "登录状态已过期，请重新登录"
       }
     },
     "error": {
       "cannot_connect": "网络异常",
       "invalid_auth": "登录信息无效",
-      "qr_not_scanned": "扫描二维码并确认登录",
       "unknown": "未知错误: {error_detail}"
     },
     "abort": {
-      "reauth_successful": "登录成功",
-      "already_configured": "账号已添加，请勿重复添加",
-      "all_added": "没有可添加到此集成的户号"
+      "already_configured": "账号已添加，请勿重复添加"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "选择操作"
-      },
-      "add_account": {
-        "title": "选择户号"
+        "title": "选择操作",
+        "description": "请选择要修改的设置",
+        "data": {
+          "action": "操作"
+        }
       },
       "settings": {
-        "title": "参数设置",
+        "title": "更新间隔设置",
+        "description": "设置数据刷新间隔（最低60秒）",
         "data": {
           "update_interval": "更新间隔（秒）"
+        }
+      },
+      "auth": {
+        "title": "认证信息设置",
+        "description": "{description}",
+        "data": {
+          "mobile": "手机号（用于自动登录）",
+          "password": "登录密码"
         }
       }
     },
     "abort": {
-      "no_account": "账户未绑定户号",
-      "all_added": "所有户号已添加"
+      "no_account": "账户未绑定户号"
     }
   }
 }

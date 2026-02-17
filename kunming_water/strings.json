@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "配置昆明水务",
+        "description": "请输入您的昆明水务账户信息。\n\n配置完成后将发送短信验证码到您的手机进行验证。",
+        "data": {
+          "user_code": "户号",
+          "mobile": "手机号"
+        }
+      },
+      "sms": {
+        "title": "输入验证码",
+        "description": "短信验证码已发送至手机 {mobile}，请输入收到的 6 位验证码",
+        "data": {
+          "sms_code": "验证码"
+        }
+      }
+    },
+    "error": {
+      "invalid_user_code": "户号不能为空",
+      "invalid_mobile": "请输入正确的11位手机号",
+      "invalid_sms_code": "验证码错误或已过期",
+      "cannot_connect": "无法连接到昆明水务服务器",
+      "invalid_auth": "手机号或验证码错误",
+      "sms_failed": "发送验证码失败，请重试"
+    },
+    "abort": {
+      "already_configured": "此户号已配置",
+      "cannot_connect": "无法连接到昆明水务服务器",
+      "invalid_auth": "认证失败"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "kunming_water": {
+        "state": {
+          "ladder_stage_1": "第1阶梯",
+          "ladder_stage_2": "第2阶梯",
+          "ladder_stage_3": "第3阶梯"
+        }
+      }
+    }
+  },
+  "title": "昆明水务"
+}
