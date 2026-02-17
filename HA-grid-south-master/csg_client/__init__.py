@@ -25,31 +25,6 @@ from .const import *
 _LOGGER = logging.getLogger(__name__)
 
 
-def normalize_area_code(area_code: str) -> str:
-    """
-    Normalize area code by converting city code to province code if needed.
-
-    Some APIs return city code (like 050100 for Kunming) as areaCode,
-    but the API calls expect province code (050000 for Yunnan).
-
-    Args:
-        area_code: The area code from API response
-
-    Returns:
-        Normalized province code
-    """
-    if area_code in CITY_CODE_TO_PROVINCE:
-        normalized = CITY_CODE_TO_PROVINCE[area_code]
-        _LOGGER.debug(
-            "Normalized area code: %s -> %s (%s)",
-            area_code,
-            normalized,
-            AREACODE_MAPPING.get(normalized, "Unknown")
-        )
-        return normalized
-    return area_code
-
-
 class CSGAPIError(Exception):
     """Generic API errors"""
 
@@ -674,32 +649,8 @@ class CSGClient:
         ele_user_resp_data = self.api_get_all_linked_electricity_accounts()
 
         for item in ele_user_resp_data:
-            area_code = item[JSON_KEY_AREA_CODE]
-            original_area_code = area_code
-
-            # Normalize city code to province code if needed
-            # (e.g., 050100 Kunming city -> 050000 Yunnan province)
-            normalized_area_code = normalize_area_code(area_code)
-
-            if original_area_code != normalized_area_code:
-                _LOGGER.info(
-                    "Account: %s - Normalized areaCode: %s -> %s",
-                    item.get("eleCustNumber", "unknown"),
-                    original_area_code,
-                    normalized_area_code
-                )
-                # Use normalized code for API calls
-                area_code = normalized_area_code
-
-            _LOGGER.info(
-                "Account: %s, Address: %s, areaCode: %s",
-                item.get("eleCustNumber", "unknown"),
-                item.get("eleAddress", "unknown"),
-                area_code
-            )
-
             metering_point_data = self.api_get_metering_point(
-                area_code, item["bindingId"]
+                item[JSON_KEY_AREA_CODE], item["bindingId"]
             )
             metering_point_id = metering_point_data[0][JSON_KEY_METERING_POINT_ID]
             metering_point_number = metering_point_data[0][
@@ -707,7 +658,7 @@ class CSGClient:
             ]
             account = CSGElectricityAccount(
                 account_number=item["eleCustNumber"],
-                area_code=area_code,  # Use normalized area code
+                area_code=item[JSON_KEY_AREA_CODE],
                 ele_customer_id=item["bindingId"],
                 metering_point_id=metering_point_id,
                 metering_point_number=metering_point_number,

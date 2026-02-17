@@ -92,20 +92,3 @@ SETTING_LAST_YEAR_UPDATE_DAY_THRESHOLD = 7
 
 # defaults
 DEFAULT_UPDATE_INTERVAL = timedelta(hours=4).seconds
-
-# ladder stage names mapping
-# API returns ladderEle as integer (0, 1, 2, 3), we map to friendly names
-LADDER_STAGE_NAMES = {
-    0: "电能替代",
-    1: "居民阶梯一",
-    2: "居民阶梯二",
-    3: "居民阶梯三",
-}
-
-# ladder stage range info (for reference)
-LADDER_STAGE_INFO = {
-    0: {"name": "电能替代", "range": "0-1560kWh", "tariff": 0.3595},
-    1: {"name": "居民阶梯一", "range": "1561-3600kWh", "tariff": 0.4495},
-    2: {"name": "居民阶梯二", "range": "3601-4680kWh", "tariff": 0.4995},
-    3: {"name": "居民阶梯三", "range": "4680kWh以上", "tariff": None},
-}

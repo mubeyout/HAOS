@@ -41,7 +41,6 @@ from .const import (
     CONF_UPDATE_INTERVAL,
     DATA_KEY_LAST_UPDATE_DAY,
     DOMAIN,
-    LADDER_STAGE_NAMES,
     SETTING_LAST_MONTH_UPDATE_DAY_THRESHOLD,
     SETTING_LAST_YEAR_UPDATE_DAY_THRESHOLD,
     SETTING_UPDATE_TIMEOUT,
@@ -331,18 +330,6 @@ class CSGLadderStageSensor(CSGBaseSensor):
 
     _attr_icon = "mdi:stairs"
 
-    @property
-    def native_value(self):
-        """Return the state of the sensor with friendly ladder name."""
-        value = self._attr_native_value
-        # Handle unavailable state
-        if value == STATE_UNAVAILABLE:
-            return STATE_UNAVAILABLE
-        # Convert ladder number to friendly name
-        if value is not None and isinstance(value, int):
-            return LADDER_STAGE_NAMES.get(value, value)
-        return value
-
 
 class CSGCoordinator(DataUpdateCoordinator):
     """CSG custom coordinator."""
@@ -412,19 +399,11 @@ class CSGCoordinator(DataUpdateCoordinator):
             )
             return False, (func.__name__, err)
         except CSGAPIError as err:
-            # Check if this is a server-side system error (sta=02)
-            if err.sta == "02":
-                _LOGGER.warning(
-                    "Server-side system error in %s (likely temporary API issue): %s",
-                    func.__name__,
-                    err.msg if hasattr(err, 'msg') else err,
-                )
-            else:
-                _LOGGER.error(
-                    "Error fetching data in coordinator: API error, function %s, %s",
-                    func.__name__,
-                    err,
-                )
+            _LOGGER.error(
+                "Error fetching data in coordinator: API error, function %s, %s",
+                func.__name__,
+                err,
+            )
             return False, (func.__name__, err)
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.error("Unexpected exception: %s", err)
@@ -988,24 +967,6 @@ class CSGCoordinator(DataUpdateCoordinator):
         for account_number, account_data in self._config[CONF_ELE_ACCOUNTS].items():
             self._gathered_data[account_number] = {}
             account = CSGElectricityAccount.load(account_data)
-
-            # Normalize area code (city code to province code) if needed
-            # This fixes the issue where API returns city code (050100) instead of province code (050000)
-            from .csg_client import normalize_area_code, CITY_CODE_TO_PROVINCE
-            original_area_code = account.area_code
-            normalized_area_code = normalize_area_code(account.area_code)
-            if original_area_code != normalized_area_code:
-                _LOGGER.info(
-                    "Normalized area_code for account %s: %s -> %s",
-                    account_number,
-                    original_area_code,
-                    normalized_area_code
-                )
-                account.area_code = normalized_area_code
-                # Update config to use normalized code
-                new_config[CONF_ELE_ACCOUNTS][account_number] = account.dump()
-                config_entry_need_update = True
-
             # handling the addition of metering point number
             if not account.metering_point_number:
                 if not metering_point_data:
