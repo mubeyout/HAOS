@@ -399,6 +399,7 @@ sensor.petrochina_gas_{用户编号}_{传感器后缀}
 <img width="auto" height="400px" alt="微信图片_20260218063244_75_4" src="https://github.com/user-attachments/assets/01183a44-c8f7-4bc0-8920-4fd850fb7d0b" />
 
 技术交流或寻求有偿服务（QQ群）
+
 <img width="auto" height="400px" alt="image" src="https://github.com/user-attachments/assets/9f9a2073-ff99-405d-8fa3-dac15b39589b" />
 
 
