@@ -41,8 +41,7 @@ from .const import (
     CONF_UPDATE_INTERVAL,
     DATA_KEY_LAST_UPDATE_DAY,
     DOMAIN,
-    SETTING_LAST_MONTH_UPDATE_DAY_THRESHOLD,
-    SETTING_LAST_YEAR_UPDATE_DAY_THRESHOLD,
+    LADDER_TIER_NAMES,
     SETTING_UPDATE_TIMEOUT,
     STATE_UPDATE_UNCHANGED,
     SUFFIX_ARR,
@@ -58,9 +57,12 @@ from .const import (
     SUFFIX_LATEST_DAY_KWH,
     SUFFIX_THIS_MONTH_COST,
     SUFFIX_THIS_MONTH_KWH,
+    SUFFIX_THIS_YEAR_BILL_COST,
+    SUFFIX_THIS_YEAR_BILL_KWH,
     SUFFIX_THIS_YEAR_COST,
     SUFFIX_THIS_YEAR_KWH,
     SUFFIX_YESTERDAY_KWH,
+    SUFFIX_YEARLY_LADDER_TOTAL_KWH,
 )
 from .csg_client import (
     JSON_KEY_METERING_POINT_NUMBER,
@@ -71,6 +73,7 @@ from .csg_client import (
     WF_ATTR_LADDER_REMAINING_KWH,
     WF_ATTR_LADDER_START_DATE,
     WF_ATTR_LADDER_TARIFF,
+    WF_ATTR_YEARLY_LADDER_TOTAL_KWH,
     CSGAPIError,
     CSGClient,
     CSGElectricityAccount,
@@ -118,14 +121,26 @@ async def async_setup_entry(
                 SUFFIX_LATEST_DAY_COST,
                 extra_state_attributes_key=ATTR_KEY_LATEST_DAY_DATE,
             ),
-            # this year's total energy, with extra attributes about monthly usage
+            # this year's bill energy (settled months only), with extra attributes about monthly usage
+            CSGEnergySensor(
+                coordinator,
+                ele_account_number,
+                SUFFIX_THIS_YEAR_BILL_KWH,
+                extra_state_attributes_key=ATTR_KEY_THIS_YEAR_BY_MONTH,
+            ),
+            # this year's bill cost (settled months only)
+            CSGCostSensor(
+                coordinator,
+                ele_account_number,
+                SUFFIX_THIS_YEAR_BILL_COST,
+            ),
+            # this year's actual energy (bill + current month)
             CSGEnergySensor(
                 coordinator,
                 ele_account_number,
                 SUFFIX_THIS_YEAR_KWH,
-                extra_state_attributes_key=ATTR_KEY_THIS_YEAR_BY_MONTH,
             ),
-            # this year's total cost
+            # this year's actual cost (bill + current month)
             CSGCostSensor(
                 coordinator,
                 ele_account_number,
@@ -186,6 +201,12 @@ async def async_setup_entry(
                 ele_account_number,
                 SUFFIX_LAST_MONTH_COST,
                 extra_state_attributes_key=ATTR_KEY_LAST_MONTH_BY_DAY,
+            ),
+            # yearly ladder total kwh (cumulative consumption in year for tiered pricing)
+            CSGEnergySensor(
+                coordinator,
+                ele_account_number,
+                SUFFIX_YEARLY_LADDER_TOTAL_KWH,
             ),
         ]
 
@@ -330,6 +351,21 @@ class CSGLadderStageSensor(CSGBaseSensor):
 
     _attr_icon = "mdi:stairs"
 
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator with ladder name conversion."""
+        # Call parent method first
+        super()._handle_coordinator_update()
+
+        # Convert ladder number to name if available
+        if self._attr_native_value is not None and self._attr_available:
+            try:
+                ladder_num = int(self._attr_native_value)
+                if ladder_num in LADDER_TIER_NAMES:
+                    self._attr_native_value = LADDER_TIER_NAMES[ladder_num]
+            except (ValueError, TypeError):
+                # Keep original value if conversion fails
+                pass
+
 
 class CSGCoordinator(DataUpdateCoordinator):
     """CSG custom coordinator."""
@@ -457,39 +493,40 @@ class CSGCoordinator(DataUpdateCoordinator):
         ] = yesterday_kwh
 
     async def _async_update_this_year_stats(self, account: CSGElectricityAccount):
-        """Update this year's data"""
+        """Update this year's bill data (settled months only)"""
         success, result = await self._async_fetch(
             self._client.get_year_month_stats, account, self._this_year
         )
         if success:
             (
-                this_year_cost,
-                this_year_kwh,
+                this_year_bill_cost,
+                this_year_bill_kwh,
                 this_year_by_month,
             ) = result
 
             _LOGGER.debug(
-                "Updated this year's data for account %s: %s",
+                "Updated this year's bill data for account %s: %s",
                 account.account_number,
                 result,
             )
         else:
             _LOGGER.error(
-                "Error updating this year's data for account %s: %s",
+                "Error updating this year's bill data for account %s: %s",
                 account.account_number,
                 result,
             )
-            this_year_cost, this_year_kwh, this_year_by_month = (
+            this_year_bill_cost, this_year_bill_kwh, this_year_by_month = (
                 STATE_UNAVAILABLE,
                 STATE_UNAVAILABLE,
                 STATE_UNAVAILABLE,
             )
+        # Store bill data (settled months only)
         self._gathered_data[account.account_number][
-            SUFFIX_THIS_YEAR_KWH
-        ] = this_year_kwh
+            SUFFIX_THIS_YEAR_BILL_KWH
+        ] = this_year_bill_kwh
         self._gathered_data[account.account_number][
-            SUFFIX_THIS_YEAR_COST
-        ] = this_year_cost
+            SUFFIX_THIS_YEAR_BILL_COST
+        ] = this_year_bill_cost
         self._gathered_data[account.account_number][ATTR_KEY_THIS_YEAR_BY_MONTH] = {
             ATTR_KEY_THIS_YEAR_BY_MONTH: this_year_by_month
         }
@@ -795,6 +832,15 @@ class CSGCoordinator(DataUpdateCoordinator):
         }
 
     def _update_latest_day(self, account: CSGElectricityAccount):
+        """Update latest day sensors from API data (no estimation)
+
+        Data sources:
+        - latest_day_kwh: from this_month_by_day[-1]["kwh"] or last_month_by_day[-1]["kwh"]
+        - latest_day_cost: from this_month_by_day[-1]["charge"] or calculated from kwh × tariff
+        - latest_day_date: from this_month_by_day[-1]["date"] or last_month_by_day[-1]["date"]
+
+        Note: This method only uses data directly from API. No estimation/fallback.
+        """
         this_month_by_day = self._gathered_data[account.account_number][
             ATTR_KEY_THIS_MONTH_BY_DAY
         ][ATTR_KEY_THIS_MONTH_BY_DAY]
@@ -832,13 +878,23 @@ class CSGCoordinator(DataUpdateCoordinator):
                     latest_day_cost = STATE_UNAVAILABLE
                     latest_day_date = last_month_by_day[-1][WF_ATTR_DATE]
                 else:
-                    _LOGGER.error(
-                        "Ele account %s, no latest day data available",
-                        account.account_number,
-                    )
+                    # No daily detail data available from API
                     latest_day_kwh = STATE_UNAVAILABLE
                     latest_day_cost = STATE_UNAVAILABLE
                     latest_day_date = STATE_UNAVAILABLE
+
+        # Calculate latest_day_cost from latest_day_kwh if not available
+        if latest_day_cost == STATE_UNAVAILABLE and latest_day_kwh not in [STATE_UNAVAILABLE, None]:
+            current_tariff = self._gathered_data[account.account_number].get(
+                SUFFIX_CURRENT_LADDER_TARIFF
+            )
+            if current_tariff not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]:
+                latest_day_cost = round(latest_day_kwh * current_tariff, 2)
+                _LOGGER.debug(
+                    "Calculated latest_day_cost from latest_day_kwh: %s kWh × %s = %s CNY",
+                    latest_day_kwh, current_tariff, latest_day_cost
+                )
+
         self._gathered_data[account.account_number][
             SUFFIX_LATEST_DAY_KWH
         ] = latest_day_kwh
@@ -848,6 +904,114 @@ class CSGCoordinator(DataUpdateCoordinator):
         self._gathered_data[account.account_number][ATTR_KEY_LATEST_DAY_DATE] = {
             ATTR_KEY_LATEST_DAY_DATE: latest_day_date
         }
+
+    def _update_this_year_actual(self, account: CSGElectricityAccount):
+        """Calculate this year's actual data (bill + current month)"""
+        # Get bill data (settled months)
+        this_year_bill_kwh = self._gathered_data[account.account_number].get(
+            SUFFIX_THIS_YEAR_BILL_KWH
+        )
+        this_year_bill_cost = self._gathered_data[account.account_number].get(
+            SUFFIX_THIS_YEAR_BILL_COST
+        )
+
+        # Get current month data
+        this_month_kwh = self._gathered_data[account.account_number].get(
+            SUFFIX_THIS_MONTH_KWH
+        )
+        this_month_cost = self._gathered_data[account.account_number].get(
+            SUFFIX_THIS_MONTH_COST
+        )
+
+        # Calculate actual data (bill + current month)
+        if (
+            this_year_bill_kwh not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+            and this_month_kwh not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+        ):
+            this_year_actual_kwh = this_year_bill_kwh + this_month_kwh
+        elif (
+            this_year_bill_kwh in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+            and this_month_kwh not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+        ):
+            # Only have current month data
+            this_year_actual_kwh = this_month_kwh
+        elif (
+            this_year_bill_kwh not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+            and this_month_kwh in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+        ):
+            # Only have bill data
+            this_year_actual_kwh = this_year_bill_kwh
+        else:
+            this_year_actual_kwh = STATE_UNAVAILABLE
+
+        if (
+            this_year_bill_cost not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+            and this_month_cost not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+        ):
+            this_year_actual_cost = this_year_bill_cost + this_month_cost
+        elif (
+            this_year_bill_cost in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+            and this_month_cost not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+        ):
+            # Only have current month data
+            this_year_actual_cost = this_month_cost
+        elif (
+            this_year_bill_cost not in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+            and this_month_cost in [STATE_UNAVAILABLE, STATE_UPDATE_UNCHANGED, None]
+        ):
+            # Only have bill data
+            this_year_actual_cost = this_year_bill_cost
+        else:
+            this_year_actual_cost = STATE_UNAVAILABLE
+
+        self._gathered_data[account.account_number][
+            SUFFIX_THIS_YEAR_KWH
+        ] = this_year_actual_kwh
+        self._gathered_data[account.account_number][
+            SUFFIX_THIS_YEAR_COST
+        ] = this_year_actual_cost
+
+        _LOGGER.debug(
+            "Ele account %s, this year actual: kwh=%s, cost=%s (bill: kwh=%s, cost=%s + month: kwh=%s, cost=%s)",
+            account.account_number,
+            this_year_actual_kwh,
+            this_year_actual_cost,
+            this_year_bill_kwh,
+            this_year_bill_cost,
+            this_month_kwh,
+            this_month_cost,
+        )
+
+    async def _async_update_yearly_ladder_info(
+        self, account: CSGElectricityAccount
+    ):
+        """Update yearly ladder (tiered pricing) cumulative consumption"""
+        success, result = await self._async_fetch(
+            self._client.get_yearly_ladder_info, account, self._this_year
+        )
+        if success:
+            yearly_ladder_info = result
+            _LOGGER.debug(
+                "Updated yearly ladder info for account %s: %s",
+                account.account_number,
+                result,
+            )
+
+            # Extract data from yearly ladder info
+            total_kwh = yearly_ladder_info.get(WF_ATTR_YEARLY_LADDER_TOTAL_KWH)
+
+            self._gathered_data[account.account_number][
+                SUFFIX_YEARLY_LADDER_TOTAL_KWH
+            ] = total_kwh if total_kwh is not None else STATE_UNAVAILABLE
+        else:
+            _LOGGER.error(
+                "Error updating yearly ladder info for account %s: %s",
+                account.account_number,
+                result,
+            )
+            self._gathered_data[account.account_number][
+                SUFFIX_YEARLY_LADDER_TOTAL_KWH
+            ] = STATE_UNAVAILABLE
 
     def _update_states(self):
         current_dt = datetime.datetime.now()
@@ -929,6 +1093,7 @@ class CSGCoordinator(DataUpdateCoordinator):
             self._async_update_last_year_stats(account),
             self._async_update_this_month_stats_and_ladder(account),
             self._async_update_last_month_stats(account),
+            self._async_update_yearly_ladder_info(account),
             return_exceptions=True,
         )
         try:
@@ -936,6 +1101,16 @@ class CSGCoordinator(DataUpdateCoordinator):
         except Exception as exc:  # pylint: disable=broad-except
             _LOGGER.error(
                 "Ele account %s, update latest day data failed: %s",
+                account.account_number,
+                exc,
+            )
+
+        # Calculate this year's actual data (bill + current month)
+        try:
+            self._update_this_year_actual(account)
+        except Exception as exc:  # pylint: disable=broad-except
+            _LOGGER.error(
+                "Ele account %s, update this year actual data failed: %s",
                 account.account_number,
                 exc,
             )
