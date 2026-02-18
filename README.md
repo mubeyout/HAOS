@@ -265,7 +265,7 @@ sensor.kunming_water_{用户编号}_{传感器后缀}
 昆明地区 cid 为 `2`，其他地区可通过以下方式获取：
 
 - **参考论坛**: [HASS论坛教程](https://bbs.hassbian.com/thread-24800-1-1.html)
-- **抓包获取**: 使用 Proxyman 等工具抓取微信小程序 "昆仑慧享+" 的网络请求，分析获取对应地区的 cid
+- **抓包获取**: 使用 Proxyman 等工具抓取微信小程序 "昆仑慧享+" 的网络请求，分析获取对应地区的 cid；若不会的本人提供有偿服务或指导（50元一次）
 
 #### 登录配置
 
@@ -397,5 +397,9 @@ sensor.petrochina_gas_{用户编号}_{传感器后缀}
 
 <img width="auto" height="400px" alt="微信图片_20260218063244_75_4" src="https://github.com/user-attachments/assets/0c26d24d-800c-4558-bb76-0fc06c3812c6" />
 <img width="auto" height="400px" alt="微信图片_20260218063244_75_4" src="https://github.com/user-attachments/assets/01183a44-c8f7-4bc0-8920-4fd850fb7d0b" />
+
+技术交流或寻求有偿服务（QQ群）
+<img width="938" height="1100" alt="image" src="https://github.com/user-attachments/assets/9f9a2073-ff99-405d-8fa3-dac15b39589b" />
+
 
 
