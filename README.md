@@ -395,5 +395,7 @@ sensor.petrochina_gas_{用户编号}_{传感器后缀}
 
 如果你觉得这些集成对你有帮助，欢迎打赏支持：
 
-![[9501a2ac13eb4a274a889056322ca718.jpg]]
-![[49eb2a13d2c83dd2f7e22b15472a40d8.png]]
+<img width="auto" height="400px" alt="微信图片_20260218063244_75_4" src="https://github.com/user-attachments/assets/0c26d24d-800c-4558-bb76-0fc06c3812c6" />
+<img width="auto" height="400px" alt="微信图片_20260218063244_75_4" src="https://github.com/user-attachments/assets/01183a44-c8f7-4bc0-8920-4fd850fb7d0b" />
+
+
