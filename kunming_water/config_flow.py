@@ -156,22 +156,33 @@ class KunmingWaterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         para_json = json.dumps(para)
         para_hex = para_json.encode('utf-8').hex()
 
+        _LOGGER.debug(f"Sending SMS to {self._mobile}, hex: {para_hex[:50]}...")
+
         try:
             if self._session is None:
                 self._session = aiohttp.ClientSession()
 
-            async with self._session.post(url, data={"ticket": para_hex}, headers={
+            headers = {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
-            }, timeout=15) as resp:
+                "Referer": "https://km96106.cn/",
+                "Origin": "https://km96106.cn",
+            }
+
+            async with self._session.post(url, data={"ticket": para_hex}, headers=headers, timeout=15) as resp:
+                _LOGGER.debug(f"SMS API response status: {resp.status}")
+
                 if resp.status == 200:
                     result = await resp.json()
                     _LOGGER.info(f"SMS code sent: {result}")
                     return result
-                return {"code": -1, "message": f"HTTP {resp.status}"}
+                else:
+                    error_text = await resp.text()
+                    _LOGGER.error(f"SMS API failed with status {resp.status}: {error_text}")
+                    return {"code": -1, "message": f"HTTP {resp.status}: {error_text[:100]}"}
 
         except Exception as e:
-            _LOGGER.error(f"Failed to send SMS: {e}")
+            _LOGGER.error(f"Failed to send SMS: {e}", exc_info=True)
             return {"code": -1, "message": str(e)}
 
     async def _verify_sms_code(self, sms_code: str) -> dict:
@@ -194,6 +205,8 @@ class KunmingWaterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "Content-Type": "application/x-www-form-urlencoded",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
             "Referer": "https://km96106.cn/browserClient/index/index.action",
+            "Origin": "https://km96106.cn",
+            "X-Requested-With": "XMLHttpRequest",
         }
 
         if self._session is None:
@@ -213,10 +226,13 @@ class KunmingWaterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return {"success": False, "message": f"登录失败，HTTP状态码: {login_resp.status}"}
 
             login_text = await login_resp.text()
+            _LOGGER.debug(f"Login response: {login_text[:300]}...")
+
             if '"flag":true' not in login_text and 'flag==true' not in login_text:
                 import re
                 error_match = re.search(r'"msg"[:\s]+"([^"]+)"', login_text)
                 error_msg = error_match.group(1) if error_match else "验证码错误或已过期"
+                _LOGGER.warning(f"Login validation failed: {error_msg}, response: {login_text[:200]}")
                 return {"success": False, "message": error_msg}
 
             _LOGGER.info(f"SMS login successful, session cookies: {self._session.cookie_jar}")

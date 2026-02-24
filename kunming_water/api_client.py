@@ -61,16 +61,8 @@ class KunmingWaterClient:
             path = cookie_data.get("path", "/")
 
             if key and value:
-                from http.cookies import Morsel
-                # 创建 Morsel 对象
-                morsel = Morsel(
-                    name=key,
-                    value=value,
-                    domain=domain,
-                    path=path,
-                    secure=True,
-                )
-                jar.set_cookie(morsel)
+                # 使用正确的 cookie 设置方法
+                jar.update_cookies({key: value})
 
         _LOGGER.debug(f"Restored {len(cookies_list)} cookies to session")
 
@@ -85,14 +77,8 @@ class KunmingWaterClient:
                 key = key.strip()
                 value = value.strip()
 
-                from http.cookies import Morsel
-                morsel = Morsel(
-                    name=key,
-                    value=value,
-                    path="/",
-                    secure=True,
-                )
-                jar.set_cookie(morsel)
+                # 使用正确的 cookie 设置方法
+                jar.update_cookies({key: value})
 
     def _get_headers(self) -> dict:
         """获取请求头"""
@@ -131,7 +117,13 @@ class KunmingWaterClient:
             "account.username": self.mobile,
         }
 
-        headers = self._get_headers()
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+            "Referer": "https://km96106.cn/browserClient/index/index.action",
+            "Origin": "https://km96106.cn",
+            "X-Requested-With": "XMLHttpRequest",
+        }
 
         try:
             async with self._session.post(
@@ -143,15 +135,31 @@ class KunmingWaterClient:
             ) as resp:
                 if resp.status == 200:
                     text = await resp.text()
+                    _LOGGER.debug(f"Login response: {text[:200]}")
+
                     if '"flag":true' in text or 'flag==true' in text:
                         self._logged_in = True
                         _LOGGER.info("SMS login successful")
+
+                        # 登录成功后访问账户主页以建立完整 session
+                        await self._session.get(
+                            "https://km96106.cn/browserClient/account/accountHome.action",
+                            headers={
+                                "User-Agent": headers["User-Agent"],
+                                "Referer": "https://km96106.cn/browserClient/index/index.action",
+                            },
+                            timeout=15
+                        )
                         return True
                     else:
-                        _LOGGER.error(f"Login failed: {text[:200]}")
+                        # 尝试提取错误信息
+                        import re
+                        error_match = re.search(r'"msg"[:\s]+"([^"]+)"', text)
+                        error_msg = error_match.group(1) if error_match else text[:100]
+                        _LOGGER.error(f"Login failed: {error_msg}")
                         return False
                 else:
-                    _LOGGER.error(f"Login failed with status {resp.status}")
+                    _LOGGER.error(f"Login failed with status {resp.status}: {await resp.text()}")
                     return False
 
         except Exception as err:
