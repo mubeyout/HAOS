@@ -41,7 +41,7 @@
   "entity": {
     "binary_sensor": {
       "workday": {
-        "name": "工作日",
+        "name": "圈养日",
         "state_attributes": {
           "is_china_holiday": { "name": "是否为中国法定节假日" },
           "china_holiday_name": { "name": "中国法定节假日名称" },
@@ -53,6 +53,13 @@
           "days_until_next_restday": { "name": "距离下一个休息日的天数" },
           "workdays": { "name": "工作日" },
           "excludes": { "name": "排除日" }
+        }
+      },
+      "restday": {
+        "name": "放养日",
+        "state_attributes": {
+          "is_china_holiday": { "name": "是否为中国法定节假日" },
+          "china_holiday_name": { "name": "中国法定节假日名称" }
         }
       }
     },

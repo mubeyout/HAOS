@@ -54,6 +54,13 @@
           "workdays": { "name": "Workdays" },
           "excludes": { "name": "Excludes" }
         }
+      },
+      "restday": {
+        "name": "Restday",
+        "state_attributes": {
+          "is_china_holiday": { "name": "Is China holiday" },
+          "china_holiday_name": { "name": "China holiday name" }
+        }
       }
     },
     "sensor": {
