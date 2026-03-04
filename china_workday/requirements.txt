@@ -1,0 +1,2 @@
+zh-holidays>=2.7
+lunarcalendar>=0.0.9

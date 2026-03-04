@@ -33,12 +33,44 @@
   },
   "entity": {
     "sensor": {
-      "kunming_water": {
-        "state": {
-          "ladder_stage_1": "第1阶梯",
-          "ladder_stage_2": "第2阶梯",
-          "ladder_stage_3": "第3阶梯"
-        }
+      "user_code": {
+        "name": "账户编号"
+      },
+      "user_name": {
+        "name": "用户名"
+      },
+      "address": {
+        "name": "用水地址"
+      },
+      "caliber": {
+        "name": "水表口径"
+      },
+      "cycle": {
+        "name": "抄表周期"
+      },
+      "latest_usage": {
+        "name": "最新账单用水量"
+      },
+      "two_month_usage": {
+        "name": "两月总用水量"
+      },
+      "monthly_avg_usage": {
+        "name": "月平均用水量"
+      },
+      "latest_bill_amount": {
+        "name": "最新账单总金额"
+      },
+      "bill_water_fee": {
+        "name": "自来水费"
+      },
+      "bill_sewage_fee": {
+        "name": "污水费"
+      },
+      "bill_garbage_fee": {
+        "name": "垃圾费"
+      },
+      "bill_date": {
+        "name": "最新账单日期"
       }
     }
   },

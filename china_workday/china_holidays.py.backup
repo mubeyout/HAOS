@@ -1,0 +1,466 @@
+"""中国节假日和农历工具函数。"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
+
+from .const import (
+    CONF_ENABLE_WEEK_TYPE,
+    CONF_IMPORTANT_DATES,
+    CONF_WEEK_TYPE_START_DATE,
+    DEFAULT_NAME,
+    LOGGER,
+)
+
+# 缓存文件路径
+CACHE_DIR = Path(".storage/china_workday")
+CHINA_HOLIDAYS_CACHE = CACHE_DIR / "china_holidays_cache.json"
+
+# 缓存更新间隔（天）
+CACHE_UPDATE_INTERVAL = 180  # 6个月
+
+# 静态备份数据（作为紧急备用）
+STATIC_CHINA_HOLIDAYS = {
+    "2024": [
+        {"date": "2024-01-01", "name": "元旦", "days": 1},
+        {"date": "2024-02-10", "name": "春节", "days": 8},
+        {"date": "2024-04-04", "name": "清明节", "days": 3},
+        {"date": "2024-05-01", "name": "劳动节", "days": 5},
+        {"date": "2024-06-10", "name": "端午节", "days": 3},
+        {"date": "2024-09-15", "name": "中秋节", "days": 3},
+        {"date": "2024-10-01", "name": "国庆节", "days": 7},
+    ],
+    "2025": [
+        {"date": "2025-01-01", "name": "元旦", "days": 1},
+        {"date": "2025-01-28", "name": "春节", "days": 8},
+        {"date": "2025-04-04", "name": "清明节", "days": 3},
+        {"date": "2025-05-01", "name": "劳动节", "days": 5},
+        {"date": "2025-05-31", "name": "端午节", "days": 3},
+        {"date": "2025-09-06", "name": "中秋节", "days": 3},
+        {"date": "2025-10-01", "name": "国庆节", "days": 7},
+    ],
+    "2026": [
+        {"date": "2026-01-01", "name": "元旦", "days": 1},
+        {"date": "2026-02-16", "name": "春节", "days": 8},
+        {"date": "2026-04-05", "name": "清明节", "days": 3},
+        {"date": "2026-05-01", "name": "劳动节", "days": 5},
+        {"date": "2026-06-19", "name": "端午节", "days": 3},
+        {"date": "2026-09-25", "name": "中秋节", "days": 3},
+        {"date": "2026-10-01", "name": "国庆节", "days": 7},
+    ],
+}
+
+# 补班日（需要上班的周六日）
+STATIC_MAKEUP_DAYS = {
+    "2024": ["2024-02-04", "2024-02-18", "2024-04-07", "2024-04-28", "2024-05-11", "2024-09-14", "2024-09-29", "2024-10-12"],
+    "2025": ["2025-01-26", "2025-02-08", "2025-04-06", "2025-04-27", "2025-05-04", "2025-09-28", "2025-10-11"],
+    "2026": ["2026-02-08", "2026-02-22", "2026-04-04", "2026-04-25", "2026-05-02", "2026-09-27", "2026-10-10"],
+}
+
+
+def _validate_and_fix_holiday_dates(holidays: list[dict[str, Any]], year: int) -> list[dict[str, Any]]:
+    """验证并修复节假日日期格式。
+
+    确保所有日期都是 YYYY-MM-DD 格式。
+    如果遇到 MM-DD 格式，自动添加年份。
+    跳过无效格式的日期。
+    """
+    validated_holidays = []
+
+    for holiday in holidays:
+        date_str = holiday.get("date", "")
+
+        if not date_str:
+            LOGGER.warning(f"跳过空日期的节假日: {holiday}")
+            continue
+
+        # 检查日期格式
+        if len(date_str) == 5 and "-" in date_str:
+            # MM-DD 格式，添加年份
+            date_str = f"{year}-{date_str}"
+            holiday["date"] = date_str
+            LOGGER.debug(f"修复日期格式: {year}-{{原始}} -> {date_str}")
+        elif len(date_str) != 10:
+            # 无效格式，跳过
+            LOGGER.warning(f"跳过无效日期格式: {date_str}")
+            continue
+
+        # 验证是否为有效的 ISO 日期
+        try:
+            date.fromisoformat(date_str)
+            validated_holidays.append(holiday)
+        except ValueError:
+            LOGGER.warning(f"跳过无效日期: {date_str}")
+            continue
+
+    return validated_holidays
+
+
+def _get_holidays_from_zh_holidays(year: int) -> list[dict[str, Any]]:
+    """使用 zh-holidays 库获取节假日数据。"""
+    try:
+        import zh_holidays
+
+        cn_holidays = zh_holidays.Country('CN')
+        holidays_list = []
+
+        # 获取指定年份的所有节假日
+        for dt_obj, holiday_obj in cn_holidays.years(year).items():
+            holiday_date = date(dt_obj.year, dt_obj.month, dt_obj.day)
+            holiday_name = holiday_obj[0].name if holiday_obj else "节假日"
+
+            # 计算节假日持续天数（zh-holidays 可能不包含这个信息）
+            # 我们使用默认值 1 天，特殊节假日可以手动配置
+            days = 1
+
+            # 特殊处理长假
+            if "春节" in holiday_name:
+                days = 8
+            elif "国庆" in holiday_name:
+                days = 7
+            elif "劳动节" in holiday_name:
+                days = 5
+            elif "清明" in holiday_name or "端午" in holiday_name or "中秋" in holiday_name:
+                days = 3
+
+            holidays_list.append({
+                "date": holiday_date.isoformat(),
+                "name": holiday_name,
+                "days": days
+            })
+
+        # 按日期排序
+        holidays_list.sort(key=lambda x: x["date"])
+        return holidays_list
+
+    except ImportError:
+        LOGGER.warning("zh-holidays 库未安装，使用静态数据")
+        return STATIC_CHINA_HOLIDAYS.get(str(year), [])
+    except Exception as err:
+        LOGGER.error("从 zh-holidays 获取节假日数据出错: %s", err)
+        return STATIC_CHINA_HOLIDAYS.get(str(year), [])
+    """获取中国法定节假日数据。"""
+    try:
+        # 检查缓存
+        cache_data = await hass.async_add_executor_job(_load_cache, CHINA_HOLIDAYS_CACHE)
+        if cache_data and str(year) in cache_data:
+            cache_time = datetime.fromisoformat(cache_data.get("cache_time", "2020-01-01"))
+            if (datetime.now() - cache_time).days < 180:  # 缓存有效期6个月
+                LOGGER.debug(f"使用缓存的 {year} 年中国法定节假日数据")
+                cached_holidays = cache_data[str(year)].get("holidays", [])
+                # 验证并修复缓存数据格式
+                validated_holidays = _validate_and_fix_holiday_dates(cached_holidays, year)
+                return {str(year): {"holidays": validated_holidays}}
+
+        # 从API获取
+        async with aiohttp.ClientSession() as session:
+            url = CHINA_HOLIDAY_API.format(year=year)
+            async with session.get(url, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get("code") == 0:
+                        holidays = []
+                        for holiday_date, info in data.get("holiday", {}).items():
+                            if isinstance(info, dict):
+                                # 确保日期包含年份
+                                if len(holiday_date) == 5 and "-" in holiday_date:
+                                    # MM-DD 格式，添加年份
+                                    holiday_date = f"{year}-{holiday_date}"
+                                elif len(holiday_date) != 10:
+                                    # 跳过格式不正确的日期
+                                    LOGGER.warning(f"跳过格式不正确的日期: {holiday_date}")
+                                    continue
+
+                                holidays.append({
+                                    "date": holiday_date,
+                                    "name": info.get("holiday", True),
+                                    "days": 1
+                                })
+
+                        # 验证修复后的数据
+                        validated_holidays = _validate_and_fix_holiday_dates(holidays, year)
+
+                        # 更新缓存
+                        await hass.async_add_executor_job(
+                            _save_cache,
+                            CHINA_HOLIDAYS_CACHE,
+                            {str(year): {"holidays": validated_holidays, "cache_time": datetime.now().isoformat()}}
+                        )
+                        LOGGER.debug(f"成功从API获取 {year} 年节假日数据，共 {len(validated_holidays)} 个")
+                        return {str(year): {"holidays": validated_holidays}}
+
+        LOGGER.warning(f"API获取 {year} 年节假日失败，使用静态备份数据")
+        static_holidays = STATIC_CHINA_HOLIDAYS.get(str(year), [])
+        return {str(year): {"holidays": static_holidays}}
+
+    except Exception as err:
+        LOGGER.error("获取中国法定节假日数据出错: %s", err)
+        # 使用静态备份数据
+        static_holidays = STATIC_CHINA_HOLIDAYS.get(str(year), [])
+        return {str(year): {"holidays": static_holidays}}
+
+
+async def get_china_holiday_data(hass: HomeAssistant, year: int) -> list[dict[str, Any]]:
+    """获取指定年份的中国节假日数据列表。"""
+    try:
+        result = await fetch_china_holidays(hass, year)
+
+        # 处理不同的返回格式
+        if isinstance(result, dict):
+            # 格式1: {str(year): {"holidays": holidays}}
+            if str(year) in result:
+                return result[str(year)].get("holidays", [])
+            # 格式2: {"holidays": holidays}
+            if "holidays" in result:
+                return result.get("holidays", [])
+
+        # 如果直接是列表
+        if isinstance(result, list):
+            return result
+
+        LOGGER.warning("未知的数据格式: %s", type(result))
+        return []
+
+    except Exception as err:
+        LOGGER.error("获取中国节假日数据出错: %s", err)
+        # 使用静态备份数据
+        return STATIC_CHINA_HOLIDAYS.get(str(year), [])
+
+
+async def fetch_lunar_date(hass: HomeAssistant, target_date: date) -> dict[str, Any] | None:
+    """获取指定日期的农历信息。"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            url = f"{LUNAR_CALENDAR_API}?d={target_date.strftime('%Y-%m-%d')}"
+            async with session.get(url, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get("code") == 0:
+                        return data.get("data")
+    except Exception as err:
+        LOGGER.error("获取农历数据出错: %s", err)
+    return None
+
+
+def parse_important_date(date_str: str) -> tuple[str, str] | None:
+    """解析重要日期字符串。
+    格式: YYYY-MM-DD 或 MM-DD 或 LYYYY-MM-DD 或 LMM-DD
+    返回: (日期, 类型) 类型可能是 'solar' 或 'lunar'
+    """
+    if not date_str:
+        return None
+
+    is_lunar = date_str.startswith("L")
+    date_part = date_str[1:] if is_lunar else date_str
+
+    try:
+        # 检查是完整日期还是月-日
+        if "-" in date_part:
+            parts = date_part.split("-")
+            if len(parts) == 2:
+                # MM-DD 格式
+                return (date_part, "lunar" if is_lunar else "solar")
+            elif len(parts) == 3:
+                # YYYY-MM-DD 格式
+                return (date_part, "lunar" if is_lunar else "solar")
+    except Exception:
+        pass
+
+    return None
+
+
+def parse_important_dates_input(input_str: str) -> list[dict[str, str]]:
+    """解析重要日期配置。
+
+    支持两种格式：
+    1. 标准格式: 日期,名称；日期,名称
+       例如: L01-01,春节; 05-20,生日
+    2. 简化格式: 日期=名称,日期=名称
+       例如: L02-27=生日,L03-23=我生日
+
+    支持的日期格式：
+    - LMM-DD: 农历月日（L开头）
+    - LYYYY-MM-DD: 农历完整日期
+    - MM-DD: 公历月日
+    - YYYY-MM-DD: 公历完整日期
+    """
+    important_dates = []
+
+    if not input_str:
+        return important_dates
+
+    # 标准化分隔符：将中文逗号、分号统一为英文逗号
+    normalized = input_str.replace("，", ",").replace(";", ",")
+
+    # 分割成多个条目
+    for item in normalized.split(","):
+        item = item.strip()
+        if not item:
+            continue
+
+        # 尝试用 = 分割（用户格式）
+        if "=" in item:
+            parts = item.split("=", 1)
+            if len(parts) == 2:
+                date_str, name = parts[0].strip(), parts[1].strip()
+                parsed = parse_important_date(date_str)
+                if parsed:
+                    date_val, date_type = parsed
+                    important_dates.append({
+                        "date": date_val,
+                        "name": name,
+                        "type": date_type
+                    })
+
+        # 尝试用 , 分割（标准格式）
+        elif "," in item:
+            parts = item.split(",", 1)
+            if len(parts) == 2:
+                date_str, name = parts[0].strip(), parts[1].strip()
+                parsed = parse_important_date(date_str)
+                if parsed:
+                    date_val, date_type = parsed
+                    important_dates.append({
+                        "date": date_val,
+                        "name": name,
+                        "type": date_type
+                    })
+
+    return important_dates
+
+
+def calculate_week_type(check_date: date, start_date: date | None) -> str | None:
+    """计算周类型（大周/小周）。
+    从start_date开始，奇数周为大周，偶数周为小周。
+    """
+    if not start_date:
+        return None
+
+    # 计算两个日期之间的周数差
+    days_diff = (check_date - start_date).days
+    if days_diff < 0:
+        return None
+
+    weeks_diff = days_diff // 7
+    return "大周" if weeks_diff % 2 == 0 else "小周"
+
+
+def is_makeup_day(check_date: date, makeup_days: list[str]) -> bool:
+    """检查是否为补班日。"""
+    date_str = check_date.strftime("%Y-%m-%d")
+    return date_str in makeup_days
+
+
+def get_makeup_days(year: int) -> list[str]:
+    """获取指定年份的补班日列表。"""
+    return STATIC_MAKEUP_DAYS.get(str(year), [])
+
+
+def _load_cache(cache_path: Path) -> dict[str, Any] | None:
+    """加载缓存文件。"""
+    try:
+        if cache_path.exists():
+            with open(cache_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as err:
+        LOGGER.warning("加载缓存文件失败: %s", err)
+    return None
+
+
+def _save_cache(cache_path: Path, data: dict[str, Any]) -> None:
+    """保存缓存文件。"""
+    try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as err:
+        LOGGER.warning("保存缓存文件失败: %s", err)
+
+
+async def get_next_important_date(
+    hass: HomeAssistant,
+    important_dates: list[dict[str, str]],
+    from_date: date
+) -> dict[str, Any] | None:
+    """获取下一个重要日期。"""
+    if not important_dates:
+        return None
+
+    current_year = from_date.year
+
+    for item in important_dates:
+        date_str = item["date"]
+        date_type = item["type"]
+        name = item["name"]
+
+        target_date = None
+
+        if date_type == "solar":
+            # 公历日期
+            if "-" in date_str:
+                parts = date_str.split("-")
+                if len(parts) == 2:
+                    # MM-DD 格式，使用今年
+                    month, day = int(parts[0]), int(parts[1])
+                    try:
+                        target_date = date(current_year, month, day)
+                        if target_date < from_date:
+                            # 如果今年的日期已过，检查明年
+                            target_date = date(current_year + 1, month, day)
+                    except ValueError:
+                        continue
+                elif len(parts) == 3:
+                    # YYYY-MM-DD 格式
+                    try:
+                        target_date = date.fromisoformat(date_str)
+                    except ValueError:
+                        continue
+
+        elif date_type == "lunar":
+            # 农历日期 - 需要API转换
+            if "-" in date_str:
+                parts = date_str.split("-")
+                if len(parts) == 2:
+                    # MM-DD 农历格式
+                    lunar_data = await fetch_lunar_date(hass, from_date.replace(month=1, day=1))
+                    if lunar_data:
+                        # 这里简化处理，实际需要更复杂的农历转换
+                        # 暂时跳过
+                        pass
+
+        if target_date and target_date >= from_date:
+            days_until = (target_date - from_date).days
+            return {
+                "date": target_date.isoformat(),
+                "name": name,
+                "days_until": days_until
+            }
+
+    return None
+
+
+def get_next_china_holiday(
+    holidays_data: list[dict[str, Any]],
+    from_date: date
+) -> dict[str, Any] | None:
+    """获取下一个中国法定节假日。"""
+    for holiday in sorted(holidays_data, key=lambda x: x["date"]):
+        holiday_date = date.fromisoformat(holiday["date"])
+        if holiday_date >= from_date:
+            days_until = (holiday_date - from_date).days
+            return {
+                "name": holiday["name"],
+                "date": holiday["date"],
+                "days_until": days_until,
+                "duration": holiday.get("days", 1)
+            }
+
+    return None

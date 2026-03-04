@@ -1,61 +1,139 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "账号已添加，请勿重复添加",
-            "reauth_successful": "重新登录成功"
-        },
-        "error": {
-            "cannot_connect": "网络异常",
-            "invalid_auth": "登录信息无效",
-            "qr_not_scanned": "扫描二维码并确认登录",
-            "unknown": "未知错误: {error_detail}"
-        },
-        "step": {
-            "add_account": {
-                "data": {
-                    "user_code": "燃气户号（8位数字）"
-                },
-                "description": "请输入您的燃气户号",
-                "title": "添加燃气户号"
-            },
-            "qr_login": {
-                "data": {
-                    "refresh_qr_code": "刷新二维码"
-                },
-                "description": "{description}",
-                "title": "扫码登录"
-            },
-            "reauth_confirm": {
-                "description": "登录状态已过期，请重新登录",
-                "title": "重新登录账号"
-            },
-            "user": {
-                "description": "选择用于登录昆仑燃气账号的方式",
-                "menu_options": {
-                    "qr_login": "微信小程序扫码登录"
-                },
-                "title": "选择登录方式"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "配置昆仑燃气",
+        "description": "请输入您的燃气户号信息和登录凭证",
+        "data": {
+          "user_code": "燃气户号（8位数字，必填）",
+          "cid": "地区代码（必填，默认2=昆明）",
+          "mobile": "手机号（必填，用于自动登录获取数据）",
+          "password": "登录密码（必填）"
         }
+      },
+      "add_account_direct": {
+        "title": "直接输入户号",
+        "description": "{description}",
+        "data": {
+          "user_code": "燃气户号（8位数字，必填）",
+          "cid": "地区代码（必填，默认2=昆明）",
+          "mobile": "手机号（必填，用于自动登录获取数据）",
+          "password": "登录密码（必填）"
+        }
+      }
     },
-    "options": {
-        "abort": {
-            "all_added": "所有户号已添加",
-            "no_account": "账户未绑定户号"
-        },
-        "step": {
-            "add_account": {
-                "title": "选择户号"
-            },
-            "init": {
-                "title": "选择操作"
-            },
-            "settings": {
-                "data": {
-                    "update_interval": "更新间隔（秒）"
-                },
-                "title": "参数设置"
-            }
-        }
+    "error": {
+      "cannot_connect": "网络异常",
+      "invalid_auth": "登录信息无效",
+      "unknown": "未知错误: {error_detail}"
+    },
+    "abort": {
+      "already_configured": "账号已添加，请勿重复添加"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "选择操作",
+        "description": "请选择要修改的设置",
+        "data": {
+          "action": "操作"
+        }
+      },
+      "settings": {
+        "title": "更新间隔设置",
+        "description": "设置数据刷新间隔（最低60秒）",
+        "data": {
+          "update_interval": "更新间隔（秒）"
+        }
+      },
+      "auth": {
+        "title": "认证信息设置",
+        "description": "{description}",
+        "data": {
+          "mobile": "手机号（用于自动登录）",
+          "password": "登录密码"
+        }
+      }
+    },
+    "abort": {
+      "no_account": "账户未绑定户号"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "balance": {
+        "name": "表端余额"
+      },
+      "gas_company": {
+        "name": "所属燃气公司"
+      },
+      "user_code": {
+        "name": "户号"
+      },
+      "customer_name": {
+        "name": "用户名"
+      },
+      "address": {
+        "name": "用气地址"
+      },
+      "meter_reading": {
+        "name": "最近表读数"
+      },
+      "last_communication": {
+        "name": "表具最后通信时间"
+      },
+      "owe_amount": {
+        "name": "待上表金额"
+      },
+      "last_payment": {
+        "name": "最近缴费金额"
+      },
+      "last_payment_date": {
+        "name": "最近缴费时间"
+      },
+      "monthly_volume": {
+        "name": "上月用气量"
+      },
+      "monthly_cost": {
+        "name": "上月用气费用"
+      },
+      "current_month_volume": {
+        "name": "本月用气量"
+      },
+      "current_month_cost": {
+        "name": "本月用气费用"
+      },
+      "yearly_volume": {
+        "name": "年度用气量"
+      },
+      "yearly_cost": {
+        "name": "年度用气费用"
+      },
+      "recent_monthly_usage": {
+        "name": "近31天累计用量"
+      },
+      "recent_monthly_cost": {
+        "name": "近31天用气费用"
+      },
+      "last_day_usage": {
+        "name": "最近一日用气量"
+      },
+      "last_day_usage_time": {
+        "name": "最近用气日期"
+      },
+      "last_day_usage_cost": {
+        "name": "最近一日用气费用"
+      },
+      "ladder_stage": {
+        "name": "当前阶梯档位"
+      },
+      "ladder_price": {
+        "name": "当前阶梯单价"
+      },
+      "ladder_remaining": {
+        "name": "当前阶梯剩余用量"
+      }
+    }
+  }
 }
