@@ -107,3 +107,8 @@ SUFFIX_YEARLY_LADDER_TOTAL_KWH = "yearly_ladder_total_kwh"
 
 # defaults
 DEFAULT_UPDATE_INTERVAL = timedelta(hours=4).seconds
+
+# Auto retry settings
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_RETRY_DELAY = 5  # seconds
+RETRY_BACKOFF_MULTIPLIER = 2

@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+._*
+*.bak
+*.patch
+*.pre_retry_patch
+temp/
+.temp/

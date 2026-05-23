@@ -19,7 +19,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME, STATE_UNAVAILABLE, UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
@@ -40,8 +40,11 @@ from .const import (
     CONF_SETTINGS,
     CONF_UPDATE_INTERVAL,
     DATA_KEY_LAST_UPDATE_DAY,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
     DOMAIN,
     LADDER_TIER_NAMES,
+    RETRY_BACKOFF_MULTIPLIER,
     SETTING_UPDATE_TIMEOUT,
     STATE_UPDATE_UNCHANGED,
     SUFFIX_ARR,
@@ -290,6 +293,11 @@ class CSGBaseSensor(
             self.async_write_ha_state()
             return
 
+        # Session-expired sentinel: skip update, preserve last known value
+        if account_data == CSGCoordinator.SESSION_EXPIRED:
+            _LOGGER.debug("%s session expired, preserving last state", self.unique_id)
+            return
+
         new_native_value = account_data.get(self._entity_suffix)
         if new_native_value is None:
             _LOGGER.warning("%s data not found in coordinator data", self.unique_id)
@@ -394,10 +402,54 @@ class CSGCoordinator(DataUpdateCoordinator):
         self._last_month_ym = None
         self._this_month_update_completed_flag = asyncio.Event()
         self._gathered_data = {}
+        # Auto retry settings
+        self._max_retries = DEFAULT_MAX_RETRIES
+        self._retry_delay = DEFAULT_RETRY_DELAY
+        self._consecutive_failures = 0
 
-    async def _async_refresh_client(self):
+class CSGCoordinator(DataUpdateCoordinator):
+    """CSG custom coordinator."""
+
+    # Special internal value indicating session has expired
+    SESSION_EXPIRED = "__CSG_SESSION_EXPIRED__"
+
+    def __init__(self, hass: HomeAssistant, config_entry_id: str) -> None:
+        """Initialize coordinator."""
+        self._config_entry_id = config_entry_id
+        self._config = hass.config_entries.async_get_entry(self._config_entry_id).data
+        super().__init__(
+            hass,
+            _LOGGER,
+            # Name of the data. For logging purposes.
+            name=f"CSG Account {self._config[CONF_USERNAME]}",
+            # Polling interval. Will only be polled if there are subscribers.
+            update_interval=timedelta(
+                seconds=self._config[CONF_SETTINGS][CONF_UPDATE_INTERVAL]
+            ),
+        )
+        self._client: CSGClient | None = None
+        self._if_update_last_month = True
+        self._if_update_last_year = True
+        self._this_day = None
+        self._this_year = None
+        self._this_month_ym = None
+        self._last_year = None
+        self._last_month_ym = None
+        self._this_month_update_completed_flag = asyncio.Event()
+        self._gathered_data = {}
+        # Auto retry settings
+        self._max_retries = DEFAULT_MAX_RETRIES
+        self._retry_delay = DEFAULT_RETRY_DELAY
+        self._consecutive_failures = 0
+        # Track session state to avoid spamming login-expired warnings
+        self._session_expired_logged = False
+
+    async def _async_refresh_client(self) -> bool:
         """Refresh the client, update the user data.
-        It cannot re-login if the session is invalidated.
+
+        Returns True if session is valid and client is ready,
+        False if session has expired (token invalid but present).
+        Does NOT raise exceptions.
         """
         _LOGGER.debug("Refreshing client")
         self._client = await self.hass.async_add_executor_job(
@@ -410,11 +462,17 @@ class CSGCoordinator(DataUpdateCoordinator):
             self._client.verify_login,
         )
         if not logged_in:
-            _LOGGER.warning(f"{self._config[CONF_USERNAME]}: Login expired")
-            raise ConfigEntryAuthFailed("Login expired")
+            if not self._session_expired_logged:
+                _LOGGER.warning(
+                    f"{self._config[CONF_USERNAME]}: Login expired, will retry with extended interval"
+                )
+                self._session_expired_logged = True
+            return False
 
+        self._session_expired_logged = False
         _LOGGER.debug(f"{self._config[CONF_USERNAME]}: Session still valid")
         await self.hass.async_add_executor_job(self._client.initialize)
+        return True
 
     async def _async_fetch(self, func: callable, *args, **kwargs) -> (bool, tuple):
         """Wrapper to fetch data from API. Return (success, result) with timeout.
@@ -446,9 +504,54 @@ class CSGCoordinator(DataUpdateCoordinator):
             _LOGGER.error(traceback.format_exc())
             return False, (func.__name__, err)
 
+    async def _async_fetch_with_retry(self, func: callable, *args, **kwargs) -> (bool, tuple):
+        """Wrapper to fetch data from API with retry mechanism.
+
+        Returns (success, result) where result is either the data or error info.
+        Implements exponential backoff for retries.
+        """
+        retry_count = 0
+        delay = self._retry_delay
+        last_error = None
+
+        while retry_count <= self._max_retries:
+            success, result = await self._async_fetch(func, *args, **kwargs)
+
+            if success:
+                self._consecutive_failures = 0
+                return True, result
+
+            # Store the error for logging
+            last_error = result
+
+            # If this is the last retry, return failure
+            if retry_count == self._max_retries:
+                _LOGGER.error(
+                    "Max retries (%d) reached for function %s",
+                    self._max_retries,
+                    func.__name__
+                )
+                self._consecutive_failures += 1
+                return False, last_error
+
+            # Wait before retry with exponential backoff
+            _LOGGER.warning(
+                "Fetch failed for %s (attempt %d/%d), retrying in %d seconds... Error: %s",
+                func.__name__,
+                retry_count + 1,
+                self._max_retries + 1,
+                delay,
+                last_error[1] if isinstance(last_error, tuple) and len(last_error) > 1 else last_error
+            )
+            await asyncio.sleep(delay)
+            delay *= RETRY_BACKOFF_MULTIPLIER
+            retry_count += 1
+
+        return False, last_error
+
     async def _async_update_bal_arr(self, account: CSGElectricityAccount):
         """Update balance and arrears"""
-        success, result = await self._async_fetch(
+        success, result = await self._async_fetch_with_retry(
             self._client.get_balance_and_arrears, account
         )
         if success:
@@ -470,7 +573,7 @@ class CSGCoordinator(DataUpdateCoordinator):
 
     async def _async_update_yesterday_kwh(self, account: CSGElectricityAccount):
         """Update yesterday's kwh"""
-        success, result = await self._async_fetch(
+        success, result = await self._async_fetch_with_retry(
             self._client.get_yesterday_kwh,
             account,
         )
@@ -494,7 +597,7 @@ class CSGCoordinator(DataUpdateCoordinator):
 
     async def _async_update_this_year_stats(self, account: CSGElectricityAccount):
         """Update this year's bill data (settled months only)"""
-        success, result = await self._async_fetch(
+        success, result = await self._async_fetch_with_retry(
             self._client.get_year_month_stats, account, self._this_year
         )
         if success:
@@ -548,7 +651,7 @@ class CSGCoordinator(DataUpdateCoordinator):
                 account.account_number,
             )
             return
-        success, result = await self._async_fetch(
+        success, result = await self._async_fetch_with_retry(
             self._client.get_year_month_stats, account, self._last_year
         )
         if success:
@@ -986,7 +1089,7 @@ class CSGCoordinator(DataUpdateCoordinator):
         self, account: CSGElectricityAccount
     ):
         """Update yearly ladder (tiered pricing) cumulative consumption"""
-        success, result = await self._async_fetch(
+        success, result = await self._async_fetch_with_retry(
             self._client.get_yearly_ladder_info, account, self._this_year
         )
         if success:
@@ -1127,17 +1230,54 @@ class CSGCoordinator(DataUpdateCoordinator):
         This is the place to pre-process the data to lookup tables
         so entities can quickly look up their data.
         """
-        self.update_interval = timedelta(
-            seconds=self._config[CONF_SETTINGS][CONF_UPDATE_INTERVAL]
-        )
+        # Dynamically adjust update interval based on consecutive failures
+        if self._consecutive_failures >= 5:
+            _LOGGER.warning(
+                "Too many consecutive failures (%d), increasing update interval to 1 hour",
+                self._consecutive_failures
+            )
+            self.update_interval = timedelta(hours=1)
+        elif self._consecutive_failures >= 3:
+            _LOGGER.warning(
+                "Multiple consecutive failures (%d), increasing update interval to 30 minutes",
+                self._consecutive_failures
+            )
+            self.update_interval = timedelta(minutes=30)
+        else:
+            # Normal update interval
+            self.update_interval = timedelta(
+                seconds=self._config[CONF_SETTINGS][CONF_UPDATE_INTERVAL]
+            )
+
         self._update_states()
         # _LOGGER.debug("Coordinator update interval: %d", self.update_interval.seconds)
-        _LOGGER.debug("Coordinator update started")
+        _LOGGER.debug("Coordinator update started (consecutive failures: %d)", self._consecutive_failures)
         start_time = time.time()
+
 
         metering_point_data = {}
         config_entry_need_update = False
-        await self._async_refresh_client()
+
+        # Check session validity before doing any data fetching
+        session_ok = await self._async_refresh_client()
+        if not session_ok:
+            # Session expired: extend interval, return SESSION_EXPIRED sentinel
+            # so sensors preserve last known value instead of going unavailable
+            if self._consecutive_failures >= 5:
+                self.update_interval = timedelta(hours=6)
+            elif self._consecutive_failures >= 3:
+                self.update_interval = timedelta(hours=2)
+            else:
+                self.update_interval = timedelta(minutes=30)
+            self._consecutive_failures += 1
+            _LOGGER.warning(
+                "Session expired, will retry in %s (failure #%d)",
+                self.update_interval,
+                self._consecutive_failures
+            )
+            # Return sentinel — all sensors will retain their last state
+            return {CSGCoordinator.SESSION_EXPIRED: True}
+
         new_config = self._config.copy()
         for account_number, account_data in self._config[CONF_ELE_ACCOUNTS].items():
             self._gathered_data[account_number] = {}
@@ -1145,7 +1285,7 @@ class CSGCoordinator(DataUpdateCoordinator):
             # handling the addition of metering point number
             if not account.metering_point_number:
                 if not metering_point_data:
-                    ok, data = await self._async_fetch(
+                    ok, data = await self._async_fetch_with_retry(
                         self._client.api_get_metering_point,
                         account.area_code,
                         account.ele_customer_id,
