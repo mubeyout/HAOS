@@ -306,9 +306,22 @@ class CSGBaseSensor(
             return
 
         if new_native_value == STATE_UNAVAILABLE:
+            # Preserve last known value on transient fetch failures (e.g. CSG upstream
+            # returns sta=09 "无此用户数据" or marketing system outage). This keeps
+            # the dashboard showing the last successful reading instead of going to
+            # unknown / unavailable, so the user no longer needs to manually reload
+            # the integration after every blip.
+            if self._attr_native_value is not None:
+                _LOGGER.debug(
+                    "%s fetch returned unavailable, preserving last value %s",
+                    self.unique_id,
+                    self._attr_native_value,
+                )
+                return
+            # First-time fetch failed (no previous value to keep): mark unavailable.
             _LOGGER.debug("%s data is unavailable", self.unique_id)
-            self.async_write_ha_state()
             self._attr_available = False
+            self.async_write_ha_state()
             return
 
         # from this point the value is available
@@ -443,6 +456,8 @@ class CSGCoordinator(DataUpdateCoordinator):
         self._consecutive_failures = 0
         # Track session state to avoid spamming login-expired warnings
         self._session_expired_logged = False
+        # Count consecutive successes for periodic reload
+        self._consecutive_successes = 0
 
     async def _async_refresh_client(self) -> bool:
         """Refresh the client, update the user data.
@@ -1224,6 +1239,10 @@ class CSGCoordinator(DataUpdateCoordinator):
             time.time() - start_time,
         )
 
+    # Auto-reload threshold: after this many consecutive failures, reload the
+    # entire integration to re-initialize session and API connections.
+    AUTO_RELOAD_FAILURE_THRESHOLD = 6
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint.
 
@@ -1275,6 +1294,21 @@ class CSGCoordinator(DataUpdateCoordinator):
                 self.update_interval,
                 self._consecutive_failures
             )
+
+            # Auto-reload integration after consecutive session failures
+            if self._consecutive_failures >= self.AUTO_RELOAD_FAILURE_THRESHOLD:
+                _LOGGER.warning(
+                    "Reached auto-reload threshold (%d consecutive failures), "
+                    "reloading integration to reinitialize session",
+                    self._consecutive_failures,
+                )
+                self._consecutive_failures = 0
+                await self.hass.config_entries.async_reload(
+                    self._config_entry_id
+                )
+                # Return sentinel — reload will trigger a fresh update cycle
+                return {CSGCoordinator.SESSION_EXPIRED: True}
+
             # Return sentinel — all sensors will retain their last state
             return {CSGCoordinator.SESSION_EXPIRED: True}
 
@@ -1316,4 +1350,19 @@ class CSGCoordinator(DataUpdateCoordinator):
         self.hass.data[DOMAIN][self._config_entry_id][
             DATA_KEY_LAST_UPDATE_DAY
         ] = self._this_day
+
+        # All data fetched successfully — check if we also need periodic reload
+        # to prevent session staleness (南网 session typically expires after ~24h)
+        self._consecutive_successes = getattr(self, '_consecutive_successes', 0) + 1
+        PERIODIC_RELOAD_SUCCESS_COUNT = 6  # ~24h at 4h default interval
+        if self._consecutive_successes >= PERIODIC_RELOAD_SUCCESS_COUNT:
+            _LOGGER.info(
+                "Periodic reload: %d successful updates, reloading to refresh session",
+                self._consecutive_successes,
+            )
+            self._consecutive_successes = 0
+            await self.hass.config_entries.async_reload(
+                self._config_entry_id
+            )
+
         return self._gathered_data
