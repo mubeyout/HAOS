@@ -1,0 +1,139 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure PetroChina Gas",
+        "description": "Please enter your gas account information and login credentials",
+        "data": {
+          "user_code": "Gas User Code (8 digits, required)",
+          "cid": "Region Code (required, default 2=Kunming)",
+          "mobile": "Mobile Number (required, for automatic login)",
+          "password": "Login Password (required)"
+        }
+      },
+      "add_account_direct": {
+        "title": "Enter User Code Directly",
+        "description": "{description}",
+        "data": {
+          "user_code": "Gas User Code (8 digits, required)",
+          "cid": "Region Code (required, default 2=Kunming)",
+          "mobile": "Mobile Number (required, for automatic login)",
+          "password": "Login Password (required)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Network Error",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unknown error: {error_detail}"
+    },
+    "abort": {
+      "already_configured": "Account has already been configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Select Action",
+        "description": "Please select the setting to modify",
+        "data": {
+          "action": "Action"
+        }
+      },
+      "settings": {
+        "title": "Update Interval Settings",
+        "description": "Set data refresh interval (minimum 60 seconds)",
+        "data": {
+          "update_interval": "Update Interval (seconds)"
+        }
+      },
+      "auth": {
+        "title": "Authentication Settings",
+        "description": "{description}",
+        "data": {
+          "mobile": "Mobile Number (for automatic login)",
+          "password": "Login Password"
+        }
+      }
+    },
+    "abort": {
+      "no_account": "No gas account linked"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "balance": {
+        "name": "Meter Balance"
+      },
+      "gas_company": {
+        "name": "Gas Company"
+      },
+      "user_code": {
+        "name": "User Code"
+      },
+      "customer_name": {
+        "name": "Customer Name"
+      },
+      "address": {
+        "name": "Service Address"
+      },
+      "meter_reading": {
+        "name": "Latest Meter Reading"
+      },
+      "last_communication": {
+        "name": "Last Communication Time"
+      },
+      "owe_amount": {
+        "name": "Outstanding Amount"
+      },
+      "last_payment": {
+        "name": "Last Payment Amount"
+      },
+      "last_payment_date": {
+        "name": "Last Payment Date"
+      },
+      "monthly_volume": {
+        "name": "Last Month Usage"
+      },
+      "monthly_cost": {
+        "name": "Last Month Cost"
+      },
+      "current_month_volume": {
+        "name": "This Month Usage"
+      },
+      "current_month_cost": {
+        "name": "This Month Cost"
+      },
+      "yearly_volume": {
+        "name": "Yearly Usage"
+      },
+      "yearly_cost": {
+        "name": "Yearly Cost"
+      },
+      "recent_monthly_usage": {
+        "name": "Recent 31 Days Usage"
+      },
+      "recent_monthly_cost": {
+        "name": "Recent 31 Days Cost"
+      },
+      "last_day_usage": {
+        "name": "Latest Day Usage"
+      },
+      "last_day_usage_time": {
+        "name": "Latest Usage Date"
+      },
+      "last_day_usage_cost": {
+        "name": "Latest Day Cost"
+      },
+      "ladder_stage": {
+        "name": "Current Ladder Stage"
+      },
+      "ladder_price": {
+        "name": "Current Ladder Price"
+      },
+      "ladder_remaining": {
+        "name": "Current Ladder Remaining"
+      }
+    }
+  }
+}

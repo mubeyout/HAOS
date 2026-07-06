@@ -1,0 +1,20 @@
+{
+    "domain": "china_workday",
+    "name": "\u725b\u9a6c\u65e5\u5386",
+    "codeowners": [
+        "@mubey"
+    ],
+    "config_flow": true,
+    "documentation": "https://github.com/mubey/china-workday",
+    "integration_type": "service",
+    "iot_class": "local_polling",
+    "loggers": [
+        "holidays"
+    ],
+    "quality_scale": "internal",
+    "requirements": [
+        "holidays==0.84"
+    ],
+    "version": "1.0.0",
+    "icon": "mdi:calendar-check"
+}

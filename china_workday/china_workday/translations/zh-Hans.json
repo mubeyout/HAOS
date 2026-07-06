@@ -1,0 +1,107 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "已经使用所选配置设置了牛马日历"
+    },
+    "error": {
+      "add_holiday_error": "日期格式不正确 (YYYY-MM-DD)",
+      "add_holiday_range_error": "日期范围格式不正确 (YYYY-MM-DD,YYYY-MM-DD)",
+      "remove_holiday_error": "日期格式不正确 (YYYY-MM-DD) 或未找到节假日名称",
+      "remove_holiday_range_error": "日期范围格式不正确 (YYYY-MM-DD,YYYY-MM-DD)"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "name": "名称"
+        }
+      },
+      "options": {
+        "data": {
+          "add_holidays": "添加节假日",
+          "excludes": "排除的日期",
+          "remove_holidays": "移除节假日",
+          "workdays": "包含的工作日",
+          "enable_week_type": "启用大周小周",
+          "week_type_start_date": "大周开始日期",
+          "important_dates": "重要日期"
+        },
+        "data_description": {
+          "add_holidays": "添加自定义节假日，格式 YYYY-MM-DD 或使用 , 作为分隔符的范围",
+          "excludes": "选择哪些工作日要从工作日中排除。节假日会自动排除",
+          "remove_holidays": "移除节假日，格式 YYYY-MM-DD，使用 , 作为分隔符的范围或使用部分名称",
+          "workdays": "选择哪些工作日作为可能的工作日",
+          "enable_week_type": "启用大周小周模式（大周周六工作，小周周六休息）",
+          "week_type_start_date": "大周计算的开始日期，格式：YYYY-MM-DD。从此日期开始，奇数周为大周，偶数周为小周",
+          "important_dates": "重要日期，格式：日期=名称，用逗号分隔。例如：01-01=元旦,05-20=生日,L01-01=春节（支持农历，L开头）"
+        },
+        "description": "为 {name} 设置工作日和节假日选项"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "workday": {
+        "name": "圈养日",
+        "state_attributes": {
+          "is_china_holiday": { "name": "是否为中国法定节假日" },
+          "china_holiday_name": { "name": "中国法定节假日名称" },
+          "is_makeup_day": { "name": "是否为补班日" },
+          "week_type": { "name": "周类型" },
+          "next_workday": { "name": "下一个工作日" },
+          "days_until_next_workday": { "name": "距离下一个工作日的天数" },
+          "next_restday": { "name": "下一个休息日" },
+          "days_until_next_restday": { "name": "距离下一个休息日的天数" },
+          "workdays": { "name": "工作日" },
+          "excludes": { "name": "排除日" }
+        }
+      },
+      "restday": {
+        "name": "放养日",
+        "state_attributes": {
+          "is_china_holiday": { "name": "是否为中国法定节假日" },
+          "china_holiday_name": { "name": "中国法定节假日名称" }
+        }
+      }
+    },
+    "sensor": {
+      "next_china_holiday": { "name": "下个法定节假日" },
+      "next_china_holiday_start": { "name": "下个法定假开始时间" },
+      "days_until_china_holiday": { "name": "距离下个法定假" },
+      "china_holiday_duration": { "name": "下个法定假时长" },
+      "week_type": { "name": "本周类型" },
+      "next_important_date": { "name": "下个重要日" },
+      "next_important_date_name": { "name": "下个重要日名称" },
+      "days_until_important": { "name": "距离下个重要日" },
+      "days_until_next_restday": { "name": "距离下个休息日" },
+      "holiday_balance": { "name": "假期余额" }
+    }
+  },
+  "selector": {
+    "days": {
+      "options": {
+        "mon": "星期一",
+        "tue": "星期二",
+        "wed": "星期三",
+        "thu": "星期四",
+        "fri": "星期五",
+        "sat": "星期六",
+        "sun": "星期日",
+        "holiday": "法定节假日",
+        "makeup_day": "法定补班日"
+      }
+    }
+  },
+  "services": {
+    "check_date": {
+      "description": "检查给定日期是否为工作日",
+      "fields": {
+        "check_date": {
+          "description": "要检查是否为工作日的日期",
+          "name": "日期"
+        }
+      },
+      "name": "检查日期"
+    }
+  },
+  "title": "牛马日历"
+}

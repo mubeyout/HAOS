@@ -1,0 +1,78 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Kunming Water",
+        "description": "Please enter your Kunming Water account information.\n\nAn SMS verification code will be sent to your phone after configuration.",
+        "data": {
+          "user_code": "Account Number",
+          "mobile": "Mobile Number"
+        }
+      },
+      "sms": {
+        "title": "Enter Verification Code",
+        "description": "SMS verification code has been sent to {mobile}, please enter the 6-digit code",
+        "data": {
+          "sms_code": "Verification Code"
+        }
+      }
+    },
+    "error": {
+      "invalid_user_code": "Account number cannot be empty",
+      "invalid_mobile": "Please enter a valid 11-digit mobile number",
+      "invalid_sms_code": "Invalid or expired verification code",
+      "cannot_connect": "Cannot connect to Kunming Water server",
+      "invalid_auth": "Invalid mobile number or verification code",
+      "sms_failed": "Failed to send verification code, please try again"
+    },
+    "abort": {
+      "already_configured": "This account has already been configured",
+      "cannot_connect": "Cannot connect to Kunming Water server",
+      "invalid_auth": "Authentication failed"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "user_code": {
+        "name": "Account Number"
+      },
+      "user_name": {
+        "name": "User Name"
+      },
+      "address": {
+        "name": "Service Address"
+      },
+      "caliber": {
+        "name": "Meter Caliber"
+      },
+      "cycle": {
+        "name": "Meter Reading Cycle"
+      },
+      "latest_usage": {
+        "name": "Latest Bill Usage"
+      },
+      "two_month_usage": {
+        "name": "Two Month Usage"
+      },
+      "monthly_avg_usage": {
+        "name": "Monthly Average Usage"
+      },
+      "latest_bill_amount": {
+        "name": "Latest Bill Amount"
+      },
+      "bill_water_fee": {
+        "name": "Water Fee"
+      },
+      "bill_sewage_fee": {
+        "name": "Sewage Fee"
+      },
+      "bill_garbage_fee": {
+        "name": "Garbage Fee"
+      },
+      "bill_date": {
+        "name": "Latest Bill Date"
+      }
+    }
+  },
+  "title": "Kunming Water"
+}

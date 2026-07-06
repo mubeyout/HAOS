@@ -1,0 +1,141 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Select Login Method",
+        "description": "Select a method to log in to your China Southern Power Grid account",
+        "menu_options": {
+          "sms_login": "SMS Verification Code Login",
+          "sms_pwd_login": "SMS & Password Login",
+          "csg_qr_login": "Scan QR Code with CSG App",
+          "wx_qr_login": "Scan QR Code with WeChat",
+          "ali_qr_login": "Scan QR Code with Alipay"
+        }
+      },
+      "sms_login": {
+        "title": "Log in to China Southern Power Grid",
+        "description": "Log in with mobile number and SMS verification code",
+        "data": {
+          "username": "Mobile Number"
+        }
+      },
+      "sms_pwd_login": {
+        "title": "Log in to China Southern Power Grid",
+        "description": "Log in with mobile number, password and SMS verification code",
+        "data": {
+          "username": "Mobile Number",
+          "password": "Password"
+        }
+      },
+      "validate_sms_code": {
+        "title": "Enter SMS Verification Code",
+        "description": "Verification code has been sent to: {phone_no}",
+        "data": {
+          "code": "SMS Verification Code"
+        }
+      },
+      "qr_login": {
+        "title": "Scan QR Code to Login",
+        "description": "{description}",
+        "data": {
+          "refresh_qr_code": "Refresh QR Code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Account",
+        "description": "Login session has expired, please log in again"
+      }
+    },
+    "error": {
+      "cannot_connect": "Network Error",
+      "invalid_auth": "Invalid authentication",
+      "qr_not_scanned": "Please scan the QR code and confirm login",
+      "unknown": "Unknown error: {error_detail}"
+    },
+    "abort": {
+      "reauth_successful": "Login successful",
+      "already_configured": "Account already added, please do not add again"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Select Action"
+      },
+      "add_account": {
+        "title": "Select Electricity Account"
+      },
+      "settings": {
+        "title": "Settings",
+        "data": {
+          "update_interval": "Update Interval (seconds)"
+        }
+      }
+    },
+    "abort": {
+      "no_account": "No electricity account linked",
+      "all_added": "No more accounts to add"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "balance": {
+        "name": "Account Balance"
+      },
+      "arrears": {
+        "name": "Arrears"
+      },
+      "yesterday_kwh": {
+        "name": "Yesterday Usage"
+      },
+      "latest_day_kwh": {
+        "name": "Latest Day Usage"
+      },
+      "latest_day_cost": {
+        "name": "Latest Day Cost"
+      },
+      "this_month_total_usage": {
+        "name": "This Month Usage"
+      },
+      "this_month_total_cost": {
+        "name": "This Month Cost"
+      },
+      "this_year_bill_usage": {
+        "name": "This Year Bill Usage"
+      },
+      "this_year_bill_cost": {
+        "name": "This Year Bill Cost"
+      },
+      "this_year_total_usage": {
+        "name": "This Year Total Usage"
+      },
+      "this_year_total_cost": {
+        "name": "This Year Total Cost"
+      },
+      "last_month_total_usage": {
+        "name": "Last Month Usage"
+      },
+      "last_month_total_cost": {
+        "name": "Last Month Cost"
+      },
+      "last_year_total_usage": {
+        "name": "Last Year Usage"
+      },
+      "last_year_total_cost": {
+        "name": "Last Year Cost"
+      },
+      "current_ladder": {
+        "name": "Current Ladder Stage"
+      },
+      "current_ladder_tariff": {
+        "name": "Current Ladder Tariff"
+      },
+      "current_ladder_remaining_kwh": {
+        "name": "Current Ladder Remaining"
+      },
+      "yearly_ladder_total_kwh": {
+        "name": "Yearly Ladder Total Usage"
+      }
+    }
+  }
+}

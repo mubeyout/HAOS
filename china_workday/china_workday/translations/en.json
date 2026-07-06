@@ -1,0 +1,107 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "China Workday has already been set up with chosen configuration"
+    },
+    "error": {
+      "add_holiday_error": "Incorrect format on date (YYYY-MM-DD)",
+      "add_holiday_range_error": "Incorrect format on date range (YYYY-MM-DD,YYYY-MM-DD)",
+      "remove_holiday_error": "Incorrect format on date (YYYY-MM-DD) or holiday name not found",
+      "remove_holiday_range_error": "Incorrect format on date range (YYYY-MM-DD,YYYY-MM-DD)"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name"
+        }
+      },
+      "options": {
+        "data": {
+          "add_holidays": "Add holidays",
+          "excludes": "Days to exclude",
+          "remove_holidays": "Remove holidays",
+          "workdays": "Days to include",
+          "enable_week_type": "Enable week type",
+          "week_type_start_date": "Week type start date",
+          "important_dates": "Important dates"
+        },
+        "data_description": {
+          "add_holidays": "Add custom holidays as YYYY-MM-DD or as range using `,` as separator",
+          "excludes": "Select which weekdays to exclude as workdays. Holidays will be automatically excluded",
+          "remove_holidays": "Remove holidays as YYYY-MM-DD, as range using `,` as separator or by using partial of name",
+          "workdays": "Select which weekdays to include as possible workdays",
+          "enable_week_type": "Enable week type mode (Big week: work on Saturday, Small week: rest on Saturday)",
+          "week_type_start_date": "Start date for week type calculation, format: YYYY-MM-DD. From this date, odd weeks are Big weeks, even weeks are Small weeks",
+          "important_dates": "Important dates, format: date=name, separated by commas. E.g.: 01-01=New Year,05-20=Birthday,L01-01=Spring Festival (L prefix means lunar calendar)"
+        },
+        "description": "Set workday and holiday options for {name}"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "workday": {
+        "name": "Workday",
+        "state_attributes": {
+          "is_china_holiday": { "name": "Is China holiday" },
+          "china_holiday_name": { "name": "China holiday name" },
+          "is_makeup_day": { "name": "Is makeup day" },
+          "week_type": { "name": "Week type" },
+          "next_workday": { "name": "Next workday" },
+          "days_until_next_workday": { "name": "Days until next workday" },
+          "next_restday": { "name": "Next restday" },
+          "days_until_next_restday": { "name": "Days until next restday" },
+          "workdays": { "name": "Workdays" },
+          "excludes": { "name": "Excludes" }
+        }
+      },
+      "restday": {
+        "name": "Restday",
+        "state_attributes": {
+          "is_china_holiday": { "name": "Is China holiday" },
+          "china_holiday_name": { "name": "China holiday name" }
+        }
+      }
+    },
+    "sensor": {
+      "next_china_holiday": { "name": "Next China holiday" },
+      "next_china_holiday_start": { "name": "Next China holiday start" },
+      "days_until_china_holiday": { "name": "Days until China holiday" },
+      "china_holiday_duration": { "name": "China holiday duration" },
+      "week_type": { "name": "Week type" },
+      "next_important_date": { "name": "Next important date" },
+      "next_important_date_name": { "name": "Next important date name" },
+      "days_until_important": { "name": "Days until important" },
+      "days_until_next_restday": { "name": "Days until next restday" },
+      "holiday_balance": { "name": "Holiday balance" }
+    }
+  },
+  "selector": {
+    "days": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday",
+        "holiday": "Holiday",
+        "makeup_day": "Makeup day"
+      }
+    }
+  },
+  "services": {
+    "check_date": {
+      "description": "Checks if a given date is a workday",
+      "fields": {
+        "check_date": {
+          "description": "Date to check if workday",
+          "name": "Date"
+        }
+      },
+      "name": "Check date"
+    }
+  },
+  "title": "China Workday"
+}
