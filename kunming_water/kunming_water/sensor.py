@@ -85,7 +85,15 @@ class WaterBaseSensor(CoordinatorEntity, SensorEntity):
     @property
     def name(self) -> str | None:
         """返回传感器名称"""
-        return f"{self._account_number}-{self._entity_suffix}"
+        suffix_names = {
+            "user_code": "账户编号", "user_name": "用户名", "address": "用水地址",
+            "caliber": "水表口径", "cycle": "抄表周期",
+            "latest_usage": "最新账单用水量", "latest_bill_amount": "最新账单金额",
+            "bill_date": "账单日期", "bill_water_fee": "自来水费",
+            "bill_sewage_fee": "污水费", "bill_garbage_fee": "垃圾费",
+            "two_month_usage": "两月总用水量", "monthly_avg_usage": "月平均用水量",
+        }
+        return suffix_names.get(self._entity_suffix, f"{self._account_number}-{self._entity_suffix}")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -142,7 +150,6 @@ class WaterBaseSensor(CoordinatorEntity, SensorEntity):
 
 class WaterUserCodeSensor(WaterBaseSensor):
     """账户编号传感器"""
-    _attr_name = "账户编号"
     _attr_icon = "mdi:numeric"
 
     def __init__(
@@ -155,7 +162,6 @@ class WaterUserCodeSensor(WaterBaseSensor):
 
 class WaterUserNameSensor(WaterBaseSensor):
     """用户名传感器"""
-    _attr_name = "用户名"
     _attr_icon = "mdi:account-circle"
 
     def __init__(
@@ -168,7 +174,6 @@ class WaterUserNameSensor(WaterBaseSensor):
 
 class WaterAddressSensor(WaterBaseSensor):
     """地址传感器"""
-    _attr_name = "用水地址"
     _attr_icon = "mdi:map-marker"
 
     def __init__(
@@ -181,7 +186,6 @@ class WaterAddressSensor(WaterBaseSensor):
 
 class WaterTwoMonthUsageSensor(WaterBaseSensor):
     """两月总用水量传感器"""
-    _attr_name = "两月总用水量"
     _attr_icon = "mdi:water"
     _attr_device_class = SensorDeviceClass.WATER
     _attr_state_class = SensorStateClass.TOTAL
@@ -197,7 +201,6 @@ class WaterTwoMonthUsageSensor(WaterBaseSensor):
 
 class WaterMonthlyAvgUsageSensor(WaterBaseSensor):
     """月平均用水量传感器"""
-    _attr_name = "月平均用水量"
     _attr_icon = "mdi:calendar-month"
     _attr_device_class = SensorDeviceClass.WATER
 
@@ -212,7 +215,6 @@ class WaterMonthlyAvgUsageSensor(WaterBaseSensor):
 
 class WaterLatestUsageSensor(WaterBaseSensor):
     """最新账单用水量传感器"""
-    _attr_name = "最新账单用水量"
     _attr_icon = "mdi:water-pump"
     _attr_device_class = SensorDeviceClass.WATER
     _attr_state_class = SensorStateClass.TOTAL
@@ -228,7 +230,6 @@ class WaterLatestUsageSensor(WaterBaseSensor):
 
 class WaterCaliberSensor(WaterBaseSensor):
     """水表口径传感器"""
-    _attr_name = "水表口径"
     _attr_icon = "mdi:gauge"
 
     def __init__(
@@ -241,7 +242,6 @@ class WaterCaliberSensor(WaterBaseSensor):
 
 class WaterCycleSensor(WaterBaseSensor):
     """抄表周期传感器"""
-    _attr_name = "抄表周期"
     _attr_icon = "mdi:calendar-refresh"
 
     def __init__(
@@ -254,7 +254,6 @@ class WaterCycleSensor(WaterBaseSensor):
 
 class WaterLatestBillAmountSensor(WaterBaseSensor):
     """最新账单金额传感器（估算）"""
-    _attr_name = "最新账单金额"
     _attr_icon = "mdi:currency-cny"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -269,7 +268,6 @@ class WaterLatestBillAmountSensor(WaterBaseSensor):
 
 class WaterBillWaterFeeSensor(WaterBaseSensor):
     """自来水费传感器（估算）"""
-    _attr_name = "自来水费"
     _attr_icon = "mdi:water"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -284,7 +282,6 @@ class WaterBillWaterFeeSensor(WaterBaseSensor):
 
 class WaterBillSewageFeeSensor(WaterBaseSensor):
     """污水费传感器（估算）"""
-    _attr_name = "污水费"
     _attr_icon = "mdi:water-waves"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -299,7 +296,6 @@ class WaterBillSewageFeeSensor(WaterBaseSensor):
 
 class WaterBillGarbageFeeSensor(WaterBaseSensor):
     """垃圾费传感器（固定）"""
-    _attr_name = "垃圾费"
     _attr_icon = "mdi:trash-can"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -314,7 +310,6 @@ class WaterBillGarbageFeeSensor(WaterBaseSensor):
 
 class WaterBillDateSensor(WaterBaseSensor):
     """最新账单日期传感器"""
-    _attr_name = "账单日期"
     _attr_icon = "mdi:calendar"
     _attr_device_class = SensorDeviceClass.DATE
 
