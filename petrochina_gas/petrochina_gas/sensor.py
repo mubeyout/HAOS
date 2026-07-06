@@ -279,8 +279,8 @@ class GasBaseSensor(CoordinatorEntity, SensorEntity):
 # ============================================
 
 class GasBalanceSensor(GasBaseSensor):
-    _attr_name = "表端余额"
     """表端余额传感器"""
+    _attr_name = "表端余额"
     _attr_icon = "mdi:currency-cny"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -295,8 +295,8 @@ class GasBalanceSensor(GasBaseSensor):
 
 
 class GasCustomerInfoSensor(GasBaseSensor):
-    _attr_name = "燃气公司"
     """所属燃气公司传感器"""
+    _attr_name = "燃气公司"
     _attr_icon = "mdi:office-building"
 
     def __init__(
@@ -312,8 +312,8 @@ class GasCustomerInfoSensor(GasBaseSensor):
 
 
 class GasUserCodeSensor(GasBaseSensor):
-    _attr_name = "户号"
     """户号传感器"""
+    _attr_name = "户号"
     _attr_icon = "mdi:numeric"
 
     def __init__(
@@ -325,8 +325,8 @@ class GasUserCodeSensor(GasBaseSensor):
 
 
 class GasUserNameSensor(GasBaseSensor):
-    _attr_name = "用户名"
     """用户名传感器"""
+    _attr_name = "用户名"
     _attr_icon = "mdi:account-circle"
 
     def __init__(
@@ -338,8 +338,8 @@ class GasUserNameSensor(GasBaseSensor):
 
 
 class GasAddressSensor(GasBaseSensor):
-    _attr_name = "用气地址"
     """地址传感器"""
+    _attr_name = "用气地址"
     _attr_icon = "mdi:map-marker"
 
     def __init__(
@@ -351,8 +351,8 @@ class GasAddressSensor(GasBaseSensor):
 
 
 class GasMeterReadingSensor(GasBaseSensor):
-    _attr_name = "最近表读数"
     """最近表读数传感器"""
+    _attr_name = "最近表读数"
     _attr_icon = "mdi:gauge"
     _attr_device_class = SensorDeviceClass.GAS
 
@@ -366,8 +366,8 @@ class GasMeterReadingSensor(GasBaseSensor):
 
 
 class GasLastCommunicationSensor(GasBaseSensor):
-    _attr_name = "表具最后通信时间"
     """最近通讯时间传感器"""
+    _attr_name = "表具最后通信时间"
     _attr_icon = "mdi:clock-outline"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
@@ -380,8 +380,8 @@ class GasLastCommunicationSensor(GasBaseSensor):
 
 
 class GasOweAmountSensor(GasBaseSensor):
-    _attr_name = "待上表金额"
     """待上表金额传感器"""
+    _attr_name = "待上表金额"
     _attr_icon = "mdi:cash-clock"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -395,8 +395,8 @@ class GasOweAmountSensor(GasBaseSensor):
 
 
 class GasLastPaymentSensor(GasBaseSensor):
-    _attr_name = "最近缴费金额"
     """上次缴费金额传感器"""
+    _attr_name = "最近缴费金额"
     _attr_icon = "mdi:receipt"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -425,8 +425,8 @@ class GasLastPaymentSensor(GasBaseSensor):
 
 
 class GasLastPaymentDateSensor(GasBaseSensor):
-    _attr_name = "最近缴费时间"
     """上次缴费时间传感器"""
+    _attr_name = "最近缴费时间"
     _attr_icon = "mdi:calendar-clock"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
@@ -448,8 +448,8 @@ class GasLastPaymentDateSensor(GasBaseSensor):
 
 
 class GasMonthlyVolumeSensor(GasBaseSensor):
-    _attr_name = "上月用气量"
     """上月用气量传感器"""
+    _attr_name = "上月用气量"
     _attr_icon = "mdi:calendar-month"
     _attr_device_class = SensorDeviceClass.GAS
     _attr_state_class = SensorStateClass.TOTAL
@@ -464,8 +464,8 @@ class GasMonthlyVolumeSensor(GasBaseSensor):
 
 
 class GasMonthlyCostSensor(GasBaseSensor):
-    _attr_name = "上月用气费用"
     """上月用气费用传感器"""
+    _attr_name = "上月用气费用"
     _attr_icon = "mdi:currency-cny"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -479,8 +479,8 @@ class GasMonthlyCostSensor(GasBaseSensor):
 
 
 class CurrentMonthCostSensor(GasBaseSensor):
-    _attr_name = "本月用气费用"
     """本月用气费用传感器"""
+    _attr_name = "本月用气费用"
     _attr_icon = "mdi:calendar-check"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -494,8 +494,8 @@ class CurrentMonthCostSensor(GasBaseSensor):
 
 
 class CurrentMonthVolumeSensor(GasBaseSensor):
-    _attr_name = "本月用气量"
     """本月用气量传感器"""
+    _attr_name = "本月用气量"
     _attr_icon = "mdi:calendar-check"
     _attr_device_class = SensorDeviceClass.GAS
     _attr_state_class = SensorStateClass.TOTAL
@@ -510,8 +510,8 @@ class CurrentMonthVolumeSensor(GasBaseSensor):
 
 
 class RecentMonthlyUsageSensor(GasBaseSensor):
-    _attr_name = "近31天累计用量"
     """近31天累计用量传感器"""
+    _attr_name = "近31天累计用量"
     _attr_icon = "mdi:chart-line"
     _attr_device_class = SensorDeviceClass.GAS
     _attr_state_class = SensorStateClass.TOTAL
@@ -526,8 +526,8 @@ class RecentMonthlyUsageSensor(GasBaseSensor):
 
 
 class LastDayUsageSensor(GasBaseSensor):
-    _attr_name = "最近一日用气量"
     """最近一日用气量传感器"""
+    _attr_name = "最近一日用气量"
     _attr_icon = "mdi:calendar-today"
     _attr_device_class = SensorDeviceClass.GAS
     _attr_state_class = SensorStateClass.TOTAL
@@ -542,8 +542,8 @@ class LastDayUsageSensor(GasBaseSensor):
 
 
 class LastDayUsageTimeSensor(GasBaseSensor):
-    _attr_name = "最近用气日期"
     """最近一日用气时间传感器"""
+    _attr_name = "最近用气日期"
     _attr_icon = "mdi:clock"
 
     def __init__(
@@ -555,8 +555,8 @@ class LastDayUsageTimeSensor(GasBaseSensor):
 
 
 class LastDayUsageCostSensor(GasBaseSensor):
-    _attr_name = "最近一日用气费用"
     """最近一日用气费用传感器"""
+    _attr_name = "最近一日用气费用"
     _attr_icon = "mdi:cash"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -570,8 +570,8 @@ class LastDayUsageCostSensor(GasBaseSensor):
 
 
 class RecentMonthlyCostSensor(GasBaseSensor):
-    _attr_name = "近31天用气费用"
     """近31天用气费用传感器"""
+    _attr_name = "近31天用气费用"
     _attr_icon = "mdi:calendar-today"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -585,8 +585,8 @@ class RecentMonthlyCostSensor(GasBaseSensor):
 
 
 class YearlyVolumeSensor(GasBaseSensor):
-    _attr_name = "年度用气量"
     """今年用气量传感器"""
+    _attr_name = "年度用气量"
     _attr_icon = "mdi:chart-bar"
     _attr_device_class = SensorDeviceClass.GAS
     _attr_state_class = SensorStateClass.TOTAL
@@ -601,8 +601,8 @@ class YearlyVolumeSensor(GasBaseSensor):
 
 
 class YearlyCostSensor(GasBaseSensor):
-    _attr_name = "年度用气费用"
     """今年用气费用传感器"""
+    _attr_name = "年度用气费用"
     _attr_icon = "mdi:cash-multiple"
     _attr_device_class = SensorDeviceClass.MONETARY
 
@@ -616,8 +616,8 @@ class YearlyCostSensor(GasBaseSensor):
 
 
 class LadderStageSensor(GasBaseSensor):
-    _attr_name = "当前阶梯档位"
     """当前阶梯传感器"""
+    _attr_name = "当前阶梯档位"
     _attr_icon = "mdi:stairs"
 
     def __init__(
@@ -629,8 +629,8 @@ class LadderStageSensor(GasBaseSensor):
 
 
 class LadderUnitPriceSensor(GasBaseSensor):
-    _attr_name = "当前阶梯单价"
     """当前阶梯单价传感器"""
+    _attr_name = "当前阶梯单价"
     _attr_icon = "mdi:tag"
     _attr_device_class = SensorDeviceClass.MONETARY
 
