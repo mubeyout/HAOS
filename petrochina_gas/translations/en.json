@@ -7,8 +7,8 @@
         "data": {
           "user_code": "Gas User Code (8 digits, required)",
           "cid": "Region Code (required, default 2=Kunming)",
-          "mobile": "Mobile Number (required, for automatic login)",
-          "password": "Login Password (required)"
+          "mobile": "Mobile Number (optional, for auto-login)",
+          "password": "Login Password (optional)"
         }
       },
       "add_account_direct": {
@@ -17,8 +17,8 @@
         "data": {
           "user_code": "Gas User Code (8 digits, required)",
           "cid": "Region Code (required, default 2=Kunming)",
-          "mobile": "Mobile Number (required, for automatic login)",
-          "password": "Login Password (required)"
+          "mobile": "Mobile Number (optional, for auto-login)",
+          "password": "Login Password (optional)"
         }
       }
     },

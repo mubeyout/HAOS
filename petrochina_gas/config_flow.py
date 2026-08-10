@@ -76,12 +76,13 @@ class PetrochinaGasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         str, vol.Length(min=8, max=8), msg="请输入8位燃气户号"
                     ),
                     vol.Required(CONF_CID, default=2): int,
-                    vol.Required(CONF_MOBILE): str,
-                    vol.Required(CONF_PASSWORD): str,
+                    vol.Optional(CONF_MOBILE): str,
+                    vol.Optional(CONF_PASSWORD): str,
                 }),
                 description_placeholders={
                     "description": "<p>请输入您的燃气户号和登录凭证。</p>"
-                    "<p>系统将使用手机号和密码自动登录，无需手动获取Token。</p>"
+                    "<p>手机号和密码为选填，填写后可自动登录获取详细数据（缴费记录、用气统计等）。</p>"
+                    "<p>如不填写，仅使用公开API获取基础余额信息。</p>"
                     "<p>地区代码：昆明=2，其他地区请咨询燃气公司。</p>"
                 },
             )
@@ -91,10 +92,11 @@ class PetrochinaGasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         terminal_type = DEFAULT_TERMINAL_TYPE
 
         # 收集认证信息（不再收集 company_id，自动检测）
-        auth_settings = {
-            CONF_MOBILE: user_input.get(CONF_MOBILE, ""),
-            CONF_PASSWORD: user_input.get(CONF_PASSWORD, ""),
-        }
+        auth_settings = {}
+        if user_input.get(CONF_MOBILE):
+            auth_settings[CONF_MOBILE] = user_input[CONF_MOBILE]
+        if user_input.get(CONF_PASSWORD):
+            auth_settings[CONF_PASSWORD] = user_input[CONF_PASSWORD]
 
         # 设置唯一ID
         await self.async_set_unique_id(f"GAS-{user_code}")
@@ -182,18 +184,27 @@ class PetrochinaGasOptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: Optional[dict[str, Any]] = None
     ) -> FlowResult:
         """Manage options - show menu."""
+        # 兼容旧版 HA：使用表单代替 async_show_menu
         if user_input is not None:
-            if user_input["action"] == "settings":
+            action = user_input.get("action")
+            if action == "settings":
                 return await self.async_step_settings()
-            elif user_input["action"] == "auth":
+            elif action == "auth":
                 return await self.async_step_auth()
 
-        return self.async_show_menu(
-            step_id=STEP_INIT,
-            menu_options={
+        schema = vol.Schema({
+            vol.Required("action"): vol.In({
                 "settings": "更新间隔设置",
                 "auth": "认证信息设置",
-            },
+            }),
+        })
+
+        return self.async_show_form(
+            step_id=STEP_INIT,
+            data_schema=schema,
+            description_placeholders={
+                "description": "<p>请选择要修改的设置项</p>"
+            }
         )
 
     async def async_step_settings(
@@ -210,9 +221,11 @@ class PetrochinaGasOptionsFlowHandler(config_entries.OptionsFlow):
         })
 
         if user_input:
-            new_data = self.config_entry.data.copy()
-            new_data[CONF_SETTINGS] = new_data.get(CONF_SETTINGS, {})
-            new_data[CONF_SETTINGS][CONF_UPDATE_INTERVAL] = user_input[CONF_UPDATE_INTERVAL]
+            # 使用 dict() 转换，避免 MappingProxyType 不可变问题
+            new_data = dict(self.config_entry.data)
+            new_settings = dict(new_data.get(CONF_SETTINGS, {}))
+            new_settings[CONF_UPDATE_INTERVAL] = user_input[CONF_UPDATE_INTERVAL]
+            new_data[CONF_SETTINGS] = new_settings
             new_data[CONF_UPDATED_AT] = str(int(time.time() * 1000))
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
@@ -256,8 +269,8 @@ class PetrochinaGasOptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         # 保存认证信息
-        new_data = copy.deepcopy(self.config_entry.data)
-        new_settings = new_data.get(CONF_SETTINGS, {})
+        new_data = copy.deepcopy(dict(self.config_entry.data))
+        new_settings = dict(new_data.get(CONF_SETTINGS, {}))
 
         # 更新全局设置
         for key in [CONF_MOBILE, CONF_PASSWORD]:
