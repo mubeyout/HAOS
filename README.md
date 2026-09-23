@@ -491,3 +491,8 @@ sensor.petrochina_gas_{用户编号}_{传感器后缀}
 
 
 
+
+## ⚠️ 注意事项
+
+- **petrochina_gas（昆仑燃气）**：燃气公司强制策略——连续 90 天未登录 App 会密码失效，需在「昆仑燃气」App 重置密码后到 HA 集成里重新认证（约每 3 个月一次）。
+- **新版 HA 兼容（2026-09-23）**：修复 `OptionsFlow.config_entry` 只读 property 导致配置向导 500 的问题（petrochina_gas / kunming_water / china_southern_power_grid_stat / hacs / terncy / tianqi / xiaomi_miot 同类修复）。

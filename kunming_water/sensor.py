@@ -85,15 +85,23 @@ class WaterBaseSensor(CoordinatorEntity, SensorEntity):
     @property
     def name(self) -> str | None:
         """返回传感器名称"""
-        return f"{self._account_number}-{self._entity_suffix}"
+        suffix_names = {
+            "user_code": "账户编号", "user_name": "用户名", "address": "用水地址",
+            "caliber": "水表口径", "cycle": "抄表周期",
+            "latest_usage": "最新账单用水量", "latest_bill_amount": "最新账单金额",
+            "bill_date": "账单日期", "bill_water_fee": "自来水费",
+            "bill_sewage_fee": "污水费", "bill_garbage_fee": "垃圾费",
+            "two_month_usage": "两月总用水量", "monthly_avg_usage": "月平均用水量",
+        }
+        return suffix_names.get(self._entity_suffix, f"{self._account_number}-{self._entity_suffix}")
 
     @property
     def device_info(self) -> DeviceInfo:
         """返回设备信息"""
         return DeviceInfo(
             identifiers={(DOMAIN, self._account_number)},
-            name=f"WaterAccount-{self._account_number}",
-            manufacturer="Kunming Water",
+            name="昆明水务",
+            manufacturer="昆明自来水",
             model="Virtual Water Meter",
         )
 

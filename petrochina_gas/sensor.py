@@ -222,15 +222,28 @@ class GasBaseSensor(CoordinatorEntity, SensorEntity):
     @property
     def name(self) -> str | None:
         """返回传感器名称"""
-        return f"{self._account_number}-{self._entity_suffix}"
+        suffix_names = {
+            "balance": "表端余额", "gas_company": "燃气公司",
+            "user_code": "户号", "customer_name": "用户名", "address": "用气地址",
+            "meter_reading": "最近表读数", "last_communication": "表具最后通信时间",
+            "owe_amount": "待上表金额", "last_payment": "最近缴费金额",
+            "last_payment_date": "最近缴费时间", "monthly_volume": "上月用气量",
+            "monthly_cost": "上月用气费用", "current_month_cost": "本月用气费用",
+            "current_month_volume": "本月用气量", "recent_monthly_usage": "近31天累计用量",
+            "recent_monthly_cost": "近31天用气费用", "last_day_usage": "最近一日用气量",
+            "last_day_usage_time": "最近用气日期", "last_day_usage_cost": "最近一日用气费用",
+            "yearly_volume": "年度用气量", "yearly_cost": "年度用气费用",
+            "ladder_stage": "当前阶梯档位", "ladder_unit_price": "当前阶梯单价",
+        }
+        return suffix_names.get(self._entity_suffix, f"{self._account_number}-{self._entity_suffix}")
 
     @property
     def device_info(self) -> DeviceInfo:
         """返回设备信息"""
         return DeviceInfo(
             identifiers={(DOMAIN, self._account_number)},
-            name=f"GasAccount-{self._account_number}",
-            manufacturer="Kunming Gas",
+            name="中石油燃气",
+            manufacturer="中石油昆仑燃气",
             model="Virtual Gas Meter",
         )
 
