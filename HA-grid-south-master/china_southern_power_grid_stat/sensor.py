@@ -324,16 +324,18 @@ class CSGBaseSensor(
             self.async_write_ha_state()
             return
 
+        # Session-expired sentinel: 哨兵是 data 的 key（协调器返回
+        # {SESSION_EXPIRED: True}，户号 key 不存在），必须在按户号取值之前
+        # 判断，否则 None 分支会把全部传感器置为不可用
+        if CSGCoordinator.SESSION_EXPIRED in self._coordinator.data:
+            _LOGGER.debug("%s session expired, preserving last state", self.unique_id)
+            return
+
         account_data = self._coordinator.data.get(self._account_number)
         if account_data is None:
             _LOGGER.warning("%s not found in coordinator data", self.unique_id)
             self._attr_available = False
             self.async_write_ha_state()
-            return
-
-        # Session-expired sentinel: skip update, preserve last known value
-        if account_data == CSGCoordinator.SESSION_EXPIRED:
-            _LOGGER.debug("%s session expired, preserving last state", self.unique_id)
             return
 
         new_native_value = account_data.get(self._entity_suffix)
@@ -425,38 +427,6 @@ class CSGLadderStageSensor(CSGBaseSensor):
                 # Keep original value if conversion fails
                 pass
 
-
-class CSGCoordinator(DataUpdateCoordinator):
-    """CSG custom coordinator."""
-
-    def __init__(self, hass: HomeAssistant, config_entry_id: str) -> None:
-        """Initialize coordinator."""
-        self._config_entry_id = config_entry_id
-        self._config = hass.config_entries.async_get_entry(self._config_entry_id).data
-        super().__init__(
-            hass,
-            _LOGGER,
-            # Name of the data. For logging purposes.
-            name=f"CSG Account {self._config[CONF_USERNAME]}",
-            # Polling interval. Will only be polled if there are subscribers.
-            update_interval=timedelta(
-                seconds=self._config[CONF_SETTINGS][CONF_UPDATE_INTERVAL]
-            ),
-        )
-        self._client: CSGClient | None = None
-        self._if_update_last_month = True
-        self._if_update_last_year = True
-        self._this_day = None
-        self._this_year = None
-        self._this_month_ym = None
-        self._last_year = None
-        self._last_month_ym = None
-        self._this_month_update_completed_flag = asyncio.Event()
-        self._gathered_data = {}
-        # Auto retry settings
-        self._max_retries = DEFAULT_MAX_RETRIES
-        self._retry_delay = DEFAULT_RETRY_DELAY
-        self._consecutive_failures = 0
 
 class CSGCoordinator(DataUpdateCoordinator):
     """CSG custom coordinator."""
@@ -1279,7 +1249,7 @@ class CSGCoordinator(DataUpdateCoordinator):
 
     # Auto-reload threshold: after this many consecutive failures, reload the
     # entire integration to re-initialize session and API connections.
-    AUTO_RELOAD_FAILURE_THRESHOLD = 6
+    AUTO_RELOAD_FAILURE_THRESHOLD = 3
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint.
@@ -1320,12 +1290,11 @@ class CSGCoordinator(DataUpdateCoordinator):
         if not session_ok:
             # Session expired: extend interval, return SESSION_EXPIRED sentinel
             # so sensors preserve last known value instead of going unavailable
-            if self._consecutive_failures >= 5:
-                self.update_interval = timedelta(hours=6)
-            elif self._consecutive_failures >= 3:
-                self.update_interval = timedelta(hours=2)
+            # 快速重试：5/5/15 分钟，第 3 次失败自动重载恢复会话
+            if self._consecutive_failures >= 2:
+                self.update_interval = timedelta(minutes=15)
             else:
-                self.update_interval = timedelta(minutes=30)
+                self.update_interval = timedelta(minutes=5)
             self._consecutive_failures += 1
             _LOGGER.warning(
                 "Session expired, will retry in %s (failure #%d)",
