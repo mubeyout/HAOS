@@ -127,6 +127,7 @@ class WorkStatusSensor(BaseWorkdayEntity, SensorEntity):
 
     _attr_translation_key = SENSOR_WORK_STATUS
     _attr_name = "牛马状态"
+    _attr_suggested_object_id = "01_work_status"
     _attr_icon = "mdi:horse"
 
     def __init__(
@@ -302,6 +303,7 @@ class NextChinaHolidaySensor(ChinaHolidaySensor):
 
     _attr_translation_key = SENSOR_NEXT_CHINA_HOLIDAY
     _attr_name = "下个法定节假日"
+    _attr_suggested_object_id = "03_next_holiday"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, holidays_data: list[dict[str, Any]]):
         super().__init__(entry, entry_id, name, holidays_data)
@@ -318,6 +320,7 @@ class NextChinaHolidayStartDateSensor(ChinaHolidaySensor):
 
     _attr_translation_key = SENSOR_NEXT_CHINA_HOLIDAY_START
     _attr_name = "下个法定假开始日期"
+    _attr_suggested_object_id = "04_holiday_start"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, holidays_data: list[dict[str, Any]]):
         super().__init__(entry, entry_id, name, holidays_data)
@@ -334,6 +337,7 @@ class DaysUntilChinaHolidaySensor(ChinaHolidaySensor):
 
     _attr_translation_key = SENSOR_DAYS_UNTIL_CHINA_HOLIDAY
     _attr_name = "距离下个法定假"
+    _attr_suggested_object_id = "06_days_to_holiday"
     _attr_native_unit_of_measurement = "天"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, holidays_data: list[dict[str, Any]]):
@@ -356,6 +360,7 @@ class ChinaHolidayDurationSensor(ChinaHolidaySensor):
 
     _attr_translation_key = SENSOR_CHINA_HOLIDAY_DURATION
     _attr_name = "下个法定假时长"
+    _attr_suggested_object_id = "05_holiday_duration"
     _attr_native_unit_of_measurement = "天"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, holidays_data: list[dict[str, Any]]):
@@ -373,6 +378,7 @@ class WeekTypeSensor(BaseWorkdayEntity, SensorEntity):
 
     _attr_translation_key = SENSOR_WEEK_TYPE
     _attr_name = "本周类型"
+    _attr_suggested_object_id = "02_week_type"
 
     def __init__(
         self,
@@ -509,6 +515,7 @@ class NextImportantDateSensor(ImportantDateSensor):
 
     _attr_translation_key = SENSOR_NEXT_IMPORTANT_DATE
     _attr_name = "下个重要日"
+    _attr_suggested_object_id = "09_important_date"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, important_dates: list[dict[str, str]], hass: HomeAssistant):
         super().__init__(entry, entry_id, name, important_dates, hass)
@@ -525,6 +532,7 @@ class NextImportantDateNameSensor(ImportantDateSensor):
 
     _attr_translation_key = SENSOR_NEXT_IMPORTANT_DATE_NAME
     _attr_name = "下个重要日名称"
+    _attr_suggested_object_id = "10_important_name"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, important_dates: list[dict[str, str]], hass: HomeAssistant):
         super().__init__(entry, entry_id, name, important_dates, hass)
@@ -541,6 +549,7 @@ class DaysUntilImportantSensor(ImportantDateSensor):
 
     _attr_translation_key = SENSOR_DAYS_UNTIL_IMPORTANT
     _attr_name = "距离下个重要日"
+    _attr_suggested_object_id = "11_days_to_important"
     _attr_native_unit_of_measurement = "天"
 
     def __init__(self, entry: WorkdayConfigEntry, entry_id: str, name: str, important_dates: list[dict[str, str]], hass: HomeAssistant):
@@ -558,6 +567,7 @@ class DaysUntilNextRestdaySensor(BaseWorkdayEntity, SensorEntity):
 
     _attr_translation_key = SENSOR_DAYS_UNTIL_NEXT_RESTDAY
     _attr_name = "距离下个休息日"
+    _attr_suggested_object_id = "07_days_to_restday"
     _attr_native_unit_of_measurement = "天"
 
     def __init__(
@@ -620,6 +630,7 @@ class HolidayBalanceSensor(BaseWorkdayEntity, SensorEntity):
         self._attr_unique_id = f"{entry_id}_holiday_balance"
         self._attr_translation_key = "holiday_balance"
         self._attr_name = "假期余额"
+        self._attr_suggested_object_id = "08_holiday_balance"
 
     def update_data(self, now: datetime) -> None:
         """更新数据。"""
