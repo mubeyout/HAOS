@@ -21,6 +21,12 @@ from .const import LOGGER
 CHINA_HOLIDAY_API = "https://timor.tech/api/holiday/year"
 LUNAR_CALENDAR_API = "http://timor.tech/api/lunar/calendar"
 
+# timor.tech 有 Cloudflare 防护，默认 aiohttp UA 会被 403，必须带浏览器 UA
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+}
+
 # 缓存文件路径
 CACHE_DIR = Path(".storage/china_workday")
 CHINA_HOLIDAYS_CACHE = CACHE_DIR / "china_holidays_cache.json"
@@ -47,7 +53,7 @@ async def fetch_holidays_from_api(hass: HomeAssistant, year: int) -> list[dict[s
         async with aiohttp.ClientSession() as session:
             url = f"{CHINA_HOLIDAY_API}/{year}"
 
-            async with session.get(url, timeout=10) as response:
+            async with session.get(url, timeout=10, headers=HTTP_HEADERS) as response:
                 if response.status == 200:
                     data = await response.json()
 
@@ -79,6 +85,11 @@ async def fetch_holidays_from_api(hass: HomeAssistant, year: int) -> list[dict[s
 
                         # 第三步：分组连续日期并识别节假日
                         holidays = _group_and_identify_holidays(rest_days, year)
+
+                        if not holidays:
+                            # API 成功但无数据（如次年安排未发布），回退静态表
+                            LOGGER.warning(f"API返回 {year} 年节假日为空，使用静态数据")
+                            return get_static_holidays(year)
 
                         LOGGER.info(f"从API获取 {year} 年节假日数据，共 {len(holidays)} 个节假日")
                         return holidays
@@ -239,6 +250,15 @@ def get_static_holidays(year: int) -> list[dict[str, Any]]:
             {"date": "2026-09-25", "name": "中秋节", "days": 3},
             {"date": "2026-10-01", "name": "国庆节", "days": 7},
         ],
+        "2027": [
+            {"date": "2027-01-01", "name": "元旦", "days": 1},
+            {"date": "2027-02-06", "name": "春节", "days": 8},
+            {"date": "2027-04-05", "name": "清明节", "days": 3},
+            {"date": "2027-05-01", "name": "劳动节", "days": 5},
+            {"date": "2027-06-09", "name": "端午节", "days": 3},
+            {"date": "2027-09-15", "name": "中秋节", "days": 3},
+            {"date": "2027-10-01", "name": "国庆节", "days": 7},
+        ],
     }
 
     return static_data.get(str(year), [])
@@ -266,7 +286,7 @@ async def lunar_to_solar_api(hass: HomeAssistant, lunar_year: int, lunar_month: 
             lunar_date_str = f"{lunar_year:04d}-{lunar_month:02d}-{lunar_day:02d}"
             url = f"{LUNAR_CALENDAR_API}?d={lunar_date_str}"
 
-            async with session.get(url, timeout=10) as response:
+            async with session.get(url, timeout=10, headers=HTTP_HEADERS) as response:
                 if response.status == 200:
                     data = await response.json()
 
@@ -300,7 +320,7 @@ async def get_lunar_date_api(hass: HomeAssistant, target_date: date) -> dict[str
             date_str = target_date.strftime("%Y-%m-%d")
             url = f"{LUNAR_CALENDAR_API}?d={date_str}"
 
-            async with session.get(url, timeout=10) as response:
+            async with session.get(url, timeout=10, headers=HTTP_HEADERS) as response:
                 if response.status == 200:
                     data = await response.json()
 
@@ -617,7 +637,7 @@ async def fetch_makeup_days_from_api(hass: HomeAssistant, year: int) -> list[str
         async with aiohttp.ClientSession() as session:
             url = f"{CHINA_HOLIDAY_API}/{year}"
 
-            async with session.get(url, timeout=10) as response:
+            async with session.get(url, timeout=10, headers=HTTP_HEADERS) as response:
                 if response.status == 200:
                     data = await response.json()
 
