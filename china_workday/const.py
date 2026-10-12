@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__package__)
 ALLOWED_DAYS = [*WEEKDAYS, "holiday", "makeup_day"]
 
 DOMAIN = "china_workday"
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR]
 
 CONF_WORKDAYS = "workdays"
 CONF_EXCLUDES = "excludes"
@@ -30,8 +30,11 @@ DEFAULT_EXCLUDES = ["sat", "sun", "holiday"]
 DEFAULT_NAME = "牛马日历"
 
 # 传感器唯一ID后缀
-SENSOR_WORKDAY = "workday"
-SENSOR_RESTDAY = "restday"
+SENSOR_WORK_STATUS = "work_status"
+
+# 牛马状态传感器的两个状态
+STATE_WORKING = "在做牛马"
+STATE_RESTING = "牛马放风"
 SENSOR_NEXT_CHINA_HOLIDAY = "next_china_holiday"
 SENSOR_NEXT_CHINA_HOLIDAY_START = "next_china_holiday_start"
 SENSOR_DAYS_UNTIL_CHINA_HOLIDAY = "days_until_china_holiday"

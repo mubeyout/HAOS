@@ -3,28 +3,36 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import Any
+from typing import Any, Final
+
+import voluptuous as vol
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.core import HomeAssistant, SupportsResponse, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,
+    async_get_current_platform,
+)
 from homeassistant.util import dt as dt_util
 
 from . import WorkdayConfigEntry
 from .china_holidays import (
+    calculate_week_type,
     get_china_holiday_data,
     get_makeup_days,
     parse_important_dates_input,
 )
 from .const import (
     CONF_ENABLE_WEEK_TYPE,
+    CONF_EXCLUDES,
     CONF_IMPORTANT_DATES,
     CONF_WEEK_TYPE_START_DATE,
     CONF_WORKDAYS,
-    CONF_EXCLUDES,
     DEFAULT_NAME,
+    LOGGER,
     SENSOR_CHINA_HOLIDAY_DURATION,
     SENSOR_DAYS_UNTIL_CHINA_HOLIDAY,
     SENSOR_DAYS_UNTIL_IMPORTANT,
@@ -34,9 +42,15 @@ from .const import (
     SENSOR_NEXT_IMPORTANT_DATE,
     SENSOR_NEXT_IMPORTANT_DATE_NAME,
     SENSOR_WEEK_TYPE,
-    LOGGER,
+    SENSOR_WORK_STATUS,
+    STATE_RESTING,
+    STATE_WORKING,
 )
 from .entity import BaseWorkdayEntity
+
+
+SERVICE_CHECK_DATE: Final = "check_date"
+CHECK_DATE: Final = "check_date"
 
 
 async def async_setup_entry(
@@ -47,6 +61,16 @@ async def async_setup_entry(
     """设置中国工作日传感器。"""
     sensor_name: str = entry.options.get(CONF_NAME, DEFAULT_NAME)
     entry_id = entry.entry_id
+
+    # 注册 check_date 服务（自 binary_sensor 平台迁入）
+    platform = async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_CHECK_DATE,
+        {vol.Required(CHECK_DATE): cv.date},
+        "check_date",
+        None,
+        SupportsResponse.ONLY,
+    )
 
     # 获取配置
     important_dates_input = entry.options.get(CONF_IMPORTANT_DATES, "")
@@ -66,6 +90,9 @@ async def async_setup_entry(
 
     # 创建所有传感器实体
     sensors = [
+        # 牛马状态（原 workday/restday 两个二元传感器合并为一条）
+        WorkStatusSensor(entry, entry_id, sensor_name, enable_week_type, week_type_start_date),
+
         # 中国法定节假日相关传感器
         NextChinaHolidaySensor(entry, entry_id, sensor_name, all_holidays),
         NextChinaHolidayStartDateSensor(entry, entry_id, sensor_name, all_holidays),
@@ -88,6 +115,142 @@ async def async_setup_entry(
     ]
 
     async_add_entities(sensors)
+
+
+class WorkStatusSensor(BaseWorkdayEntity, SensorEntity):
+    """牛马状态传感器。
+
+    合并原 workday/restday 两个二元传感器：
+    - 工作日 → 在做牛马（mdi:horse）
+    - 休息日 → 牛马放风（mdi:beach）
+    """
+
+    _attr_translation_key = SENSOR_WORK_STATUS
+    _attr_icon = "mdi:horse"
+
+    def __init__(
+        self,
+        entry: WorkdayConfigEntry,
+        entry_id: str,
+        name: str,
+        enable_week_type: bool,
+        week_type_start_date: str | None,
+    ) -> None:
+        """初始化牛马状态传感器。"""
+        workdays = entry.options.get(CONF_WORKDAYS, [])
+        excludes = entry.options.get(CONF_EXCLUDES, [])
+
+        super().__init__(
+            entry.runtime_data,
+            workdays,
+            excludes,
+            0,
+            name,
+            entry_id,
+        )
+        self._attr_unique_id = f"{entry_id}_{SENSOR_WORK_STATUS}"
+        self._enable_week_type = enable_week_type
+        self._week_type_start_date = week_type_start_date
+
+        if self._week_type_start_date:
+            try:
+                self._start_date = date.fromisoformat(self._week_type_start_date)
+            except ValueError:
+                self._start_date = None
+        else:
+            self._start_date = None
+
+        self._attr_extra_state_attributes = {
+            CONF_WORKDAYS: workdays,
+            CONF_EXCLUDES: excludes,
+        }
+
+    def is_makeup_day(self, check_date: date) -> bool:
+        """检查是否为补班日。"""
+        makeup_days = get_makeup_days(check_date.year)
+        date_str = check_date.strftime("%Y-%m-%d")
+        return date_str in makeup_days
+
+    def date_is_workday(self, check_date: date) -> bool:
+        """检查是否为工作日（支持补班日与大周小周）。"""
+        is_workday = super().date_is_workday(check_date)
+
+        # 补班日：非工作日但为补班日，且配置包含 makeup_day
+        if not is_workday and self.is_makeup_day(check_date):
+            if "makeup_day" in self._workdays:
+                return True
+
+        # 大周小周
+        if self._enable_week_type and self._start_date:
+            week_type = calculate_week_type(check_date, self._start_date)
+            if week_type == "小周":
+                # 小周周六不工作
+                if check_date.weekday() == 5:
+                    return False
+            elif week_type == "大周":
+                # 大周周六工作（需配置包含周六）
+                if check_date.weekday() == 5 and "sat" in self._workdays:
+                    return True
+
+        return is_workday
+
+    def update_data(self, now: datetime) -> None:
+        """更新牛马状态。"""
+        check_date = now.date()
+        is_workday = self.date_is_workday(check_date)
+
+        if is_workday:
+            self._attr_native_value = STATE_WORKING
+            self._attr_icon = "mdi:horse"
+        else:
+            self._attr_native_value = STATE_RESTING
+            self._attr_icon = "mdi:beach"
+
+        # 额外属性
+        china_holiday_name = self.get_china_holiday_name(check_date)
+        is_makeup = self.is_makeup_day(check_date)
+
+        week_type = None
+        if self._enable_week_type and self._start_date:
+            week_type = calculate_week_type(check_date, self._start_date)
+
+        # 计算下一个工作日和休息日
+        next_workday = None
+        next_restday = None
+        days_until_next_workday = None
+        days_until_next_restday = None
+
+        search_date = check_date + timedelta(days=1)
+        days_count = 1
+
+        while days_count <= 365:
+            if self.date_is_workday(search_date):
+                if not next_workday:
+                    next_workday = search_date.isoformat()
+                    days_until_next_workday = days_count
+            else:
+                if not next_restday:
+                    next_restday = search_date.isoformat()
+                    days_until_next_restday = days_count
+
+            if next_workday and next_restday:
+                break
+
+            search_date += timedelta(days=1)
+            days_count += 1
+
+        self._attr_extra_state_attributes = {
+            CONF_WORKDAYS: self._workdays,
+            CONF_EXCLUDES: self._excludes,
+            "is_china_holiday": china_holiday_name is not None,
+            "china_holiday_name": china_holiday_name,
+            "is_makeup_day": is_makeup,
+            "week_type": week_type,
+            "next_workday": next_workday,
+            "days_until_next_workday": days_until_next_workday,
+            "next_restday": next_restday,
+            "days_until_next_restday": days_until_next_restday,
+        }
 
 
 class ChinaHolidaySensor(BaseWorkdayEntity, SensorEntity):

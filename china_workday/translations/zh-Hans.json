@@ -39,9 +39,9 @@
     }
   },
   "entity": {
-    "binary_sensor": {
-      "workday": {
-        "name": "圈养日",
+    "sensor": {
+      "work_status": {
+        "name": "牛马状态",
         "state_attributes": {
           "is_china_holiday": { "name": "是否为中国法定节假日" },
           "china_holiday_name": { "name": "中国法定节假日名称" },
@@ -55,15 +55,6 @@
           "excludes": { "name": "排除日" }
         }
       },
-      "restday": {
-        "name": "放养日",
-        "state_attributes": {
-          "is_china_holiday": { "name": "是否为中国法定节假日" },
-          "china_holiday_name": { "name": "中国法定节假日名称" }
-        }
-      }
-    },
-    "sensor": {
       "next_china_holiday": { "name": "下个法定节假日" },
       "next_china_holiday_start": { "name": "下个法定假开始时间" },
       "days_until_china_holiday": { "name": "距离下个法定假" },

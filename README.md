@@ -494,5 +494,7 @@ sensor.petrochina_gas_{用户编号}_{传感器后缀}
 
 ## ⚠️ 注意事项
 
+- **china_workday（牛马日历）重构（2026-10-12）**：原「圈养日/放养日」两个二元传感器合并为一条「牛马状态」传感器（`sensor.牛马日历_牛马状态`），状态为「在做牛马」（mdi:horse）/「牛马放风」（mdi:beach），随状态自动切换图标；全部传感器补齐 icon；`check_date` 服务迁移到 sensor 域。升级后旧的两个二元传感器会显示不可用，在 HA 实体列表中删除即可。
+
 - **petrochina_gas（昆仑燃气）**：燃气公司强制策略——连续 90 天未登录 App 会密码失效，需在「昆仑燃气」App 重置密码后到 HA 集成里重新认证（约每 3 个月一次）。
 - **新版 HA 兼容（2026-09-23）**：修复 `OptionsFlow.config_entry` 只读 property 导致配置向导 500 的问题（petrochina_gas / kunming_water / china_southern_power_grid_stat / hacs / terncy / tianqi / xiaomi_miot 同类修复）。

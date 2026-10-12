@@ -1,7 +1,8 @@
 check_date:
   target:
     entity:
-      integration: workday
+      integration: china_workday
+      domain: sensor
   fields:
     check_date:
       example: "2022-12-25"

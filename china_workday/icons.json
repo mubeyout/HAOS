@@ -1,4 +1,19 @@
 {
+  "entity": {
+    "sensor": {
+      "work_status": { "default": "mdi:horse" },
+      "next_china_holiday": { "default": "mdi:calendar-star" },
+      "next_china_holiday_start": { "default": "mdi:calendar-month" },
+      "days_until_china_holiday": { "default": "mdi:calendar-clock" },
+      "china_holiday_duration": { "default": "mdi:calendar-range" },
+      "week_type": { "default": "mdi:calendar" },
+      "next_important_date": { "default": "mdi:calendar-check" },
+      "next_important_date_name": { "default": "mdi:star" },
+      "days_until_important": { "default": "mdi:clock-outline" },
+      "days_until_next_restday": { "default": "mdi:weather-sunny" },
+      "holiday_balance": { "default": "mdi:piggy-bank" }
+    }
+  },
   "services": {
     "check_date": {
       "service": "mdi:calendar-check"
