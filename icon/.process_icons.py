@@ -17,7 +17,7 @@ cropped.save('petrochina_gas.png', 'PNG', optimize=True)
 print(f'Cropped petrochina_gas size: {cropped.size}')
 
 # Generate @2x versions (512x512)
-for name in ['kunming_water.png', 'petrochina_gas.png']:
+for name in ['kunming_water.png', 'petrochina_gas.png', 'china_workday.png']:
     img = Image.open(name)
     img_2x = img.resize((512, 512), Image.Resampling.LANCZOS)
     base_name = name.replace('.png', '')
