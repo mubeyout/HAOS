@@ -1,3 +1,0 @@
-# Services for PetroChina Gas Statistics
-sensor:
-  - platform: petrochina_gas

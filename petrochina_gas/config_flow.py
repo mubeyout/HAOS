@@ -76,12 +76,11 @@ class PetrochinaGasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         str, vol.Length(min=8, max=8), msg="请输入8位燃气户号"
                     ),
                     vol.Required(CONF_CID, default=2): int,
-                    vol.Optional(CONF_MOBILE, default=""): str,
-                    vol.Optional(CONF_PASSWORD, default=""): str,
+                    vol.Required(CONF_MOBILE): str,
                 }),
                 description_placeholders={
-                    "description": "<p>请输入您的燃气户号和登录凭证。</p>"
-                    "<p>系统将使用手机号和密码自动登录，无需手动获取Token。</p>"
+                    "description": "<p>请输入燃气户号和手机号。</p>"
+                    "<p>认证为免密链路（App凭证+手机号自动铸造Token），无需密码和短信验证码，Token过期后自动重新铸造。</p>"
                     "<p>地区代码：昆明=2，其他地区请咨询燃气公司。</p>"
                 },
             )
@@ -89,11 +88,35 @@ class PetrochinaGasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_code = user_input.get(CONF_USER_CODE)
         cid = user_input.get(CONF_CID, 2)
         terminal_type = DEFAULT_TERMINAL_TYPE
+        mobile = (user_input.get(CONF_MOBILE) or "").strip()
 
-        # 收集认证信息（不再收集 company_id，自动检测）
+        # 实时校验：手机号能否走通免密链路
+        verify_client = GasHttpClient(user_code=user_code, cid=cid, terminal_type=terminal_type)
+        try:
+            login_ok = await self.hass.async_add_executor_job(verify_client.auto_login, mobile)
+        except Exception as err:
+            _LOGGER.warning(f"配置校验登录异常: {err}")
+            login_ok = False
+
+        if not login_ok:
+            return self.async_show_form(
+                step_id=STEP_USER,
+                errors={"base": ERROR_INVALID_AUTH},
+                data_schema=vol.Schema({
+                    vol.Required(CONF_USER_CODE, default=user_code): vol.All(
+                        str, vol.Length(min=8, max=8), msg="请输入8位燃气户号"
+                    ),
+                    vol.Required(CONF_CID, default=cid): int,
+                    vol.Required(CONF_MOBILE, default=mobile): str,
+                }),
+                description_placeholders={
+                    "description": "<p>登录校验失败，请确认手机号已注册昆仑燃气账户。</p>"
+                },
+            )
+
+        # 收集认证信息（免密链路只需手机号）
         auth_settings = {
-            CONF_MOBILE: user_input.get(CONF_MOBILE, ""),
-            CONF_PASSWORD: user_input.get(CONF_PASSWORD, ""),
+            CONF_MOBILE: mobile,
         }
 
         # 设置唯一ID
@@ -236,45 +259,59 @@ class PetrochinaGasOptionsFlowHandler(config_entries.OptionsFlow):
         first_account = list(accounts.values())[0]
         defaults = {
             CONF_MOBILE: settings.get(CONF_MOBILE) or first_account.get(CONF_MOBILE, ""),
-            CONF_PASSWORD: settings.get(CONF_PASSWORD) or first_account.get(CONF_PASSWORD, ""),
         }
 
         if user_input is None:
             schema = vol.Schema({
-                vol.Optional(CONF_MOBILE, default=defaults[CONF_MOBILE]): str,
-                vol.Optional(CONF_PASSWORD, default=defaults[CONF_PASSWORD]): str,
+                vol.Required(CONF_MOBILE, default=defaults[CONF_MOBILE]): str,
             })
             return self.async_show_form(
                 step_id="auth",
                 data_schema=schema,
                 description_placeholders={
-                    "description": "<p>更新登录凭证。</p>"
-                    "<p>系统将使用手机号和密码自动登录，Token过期时会自动重新获取。</p>"
-                    "<p>留空保持不变。</p>"
+                    "description": "<p>更新手机号（免密认证，无需密码）。</p>"
+                    "<p>Token 过期时集成会用该手机号自动重新铸造，无需人工干预。</p>"
                 }
+            )
+
+        mobile = (user_input.get(CONF_MOBILE) or "").strip()
+
+        # 校验免密链路
+        verify_client = GasHttpClient()
+        try:
+            auth_ok = await self.hass.async_add_executor_job(verify_client.auto_login, mobile)
+        except Exception:
+            auth_ok = False
+        if not auth_ok:
+            return self.async_show_form(
+                step_id="auth",
+                errors={"base": ERROR_INVALID_AUTH},
+                data_schema=vol.Schema({
+                    vol.Required(CONF_MOBILE, default=mobile): str,
+                }),
             )
 
         # 保存认证信息
         new_data = copy.deepcopy(self.config_entry.data)
         new_settings = new_data.get(CONF_SETTINGS, {})
 
-        # 更新全局设置
-        for key in [CONF_MOBILE, CONF_PASSWORD]:
-            if user_input.get(key):  # 只更新非空值
-                new_settings[key] = user_input[key]
+        # 更新全局设置（免密链路只存手机号）
+        if mobile:
+            new_settings[CONF_MOBILE] = mobile
+            new_settings.pop(CONF_PASSWORD, None)
 
         new_data[CONF_SETTINGS] = new_settings
         new_data[CONF_UPDATED_AT] = str(int(time.time() * 1000))
 
         # 同时更新所有账户的认证信息
         for account_key, account_config in new_data.get(CONF_ACCOUNTS, {}).items():
-            for key in [CONF_MOBILE, CONF_PASSWORD]:
-                if user_input.get(key):
-                    account_config[key] = user_input[key]
+            if mobile:
+                account_config[CONF_MOBILE] = mobile
+            account_config.pop(CONF_PASSWORD, None)
 
         self.hass.config_entries.async_update_entry(
             self.config_entry,
             data=new_data,
         )
 
-        return self.async_create_entry(title="", data=user_input)
+        return self.async_create_entry(title="", data={CONF_MOBILE: mobile})

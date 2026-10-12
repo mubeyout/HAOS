@@ -683,31 +683,35 @@ class GasCoordinator(DataUpdateCoordinator):
 
         client = self._clients[user_code]
 
-        # 如果有手机号和密码，尝试自动登录
-        if mobile and password:
+        # 免密链路登录：手机号即可铸 token（无需密码/短信/验证码）
+        if mobile:
             # 检查是否已登录且token仍然有效
             if self._logged_in.get(user_code, False) and client._token:
                 _LOGGER.debug(f"Already logged in for {user_code}, skipping login")
             else:
                 try:
-                    _LOGGER.info(f"🔐 Attempting password login for {user_code} with {mobile}")
-                    success = await self.hass.async_add_executor_job(
-                        client.password_login,
-                        mobile,
-                        password,
-                        company_id
-                    )
+                    _LOGGER.info(f"🔐 Attempting passwordless auto login for {user_code}")
+                    success = await self.hass.async_add_executor_job(client.auto_login, mobile)
                     if success:
                         self._logged_in[user_code] = True
-                        _LOGGER.info(f"✅ Password login successful for {user_code}")
+                        _LOGGER.info(f"✅ Auto login successful for {user_code}")
                     else:
-                        _LOGGER.warning(f"⚠️  Password login failed for {user_code}")
                         self._logged_in[user_code] = False
+                        _LOGGER.warning(f"⚠️  Auto login failed for {user_code}")
+                        # 免密链路失败时，若存有旧密码则退回密码登录（兼容）
+                        if password:
+                            try:
+                                success = await self.hass.async_add_executor_job(
+                                    client.password_login, mobile, password, company_id
+                                )
+                                self._logged_in[user_code] = bool(success)
+                            except Exception as err:
+                                _LOGGER.warning(f"⚠️  Password fallback login error for {user_code}: {err}")
                 except Exception as err:
-                    _LOGGER.warning(f"⚠️  Password login error for {user_code}: {err}")
+                    _LOGGER.warning(f"⚠️  Auto login error for {user_code}: {err}")
                     self._logged_in[user_code] = False
         else:
-            _LOGGER.warning(f"⚠️  No mobile/password found for {user_code}, using public API only")
+            _LOGGER.warning(f"⚠️  No mobile found for {user_code}, using public API only")
             self._logged_in[user_code] = False
 
         return client
@@ -767,20 +771,16 @@ class GasCoordinator(DataUpdateCoordinator):
                     if "403" in error_str and attempt < max_retries:
                         _LOGGER.warning(f"⚠️  Got 403 for {user_code}, attempting to re-login...")
 
-                        # 尝试重新登录
+                        # 尝试重新登录（免密链路）
                         settings = self._config.get(CONF_SETTINGS, {})
                         account_config = self._config.get(CONF_ACCOUNTS, {}).get(user_code, {})
                         mobile = account_config.get(CONF_MOBILE) or settings.get(CONF_MOBILE)
-                        password = account_config.get(CONF_PASSWORD) or settings.get(CONF_PASSWORD)
-                        company_id = account_config.get(CONF_COMPANY_ID) or settings.get(CONF_COMPANY_ID)
 
-                        if mobile and password:
+                        if mobile:
                             try:
                                 success = await self.hass.async_add_executor_job(
-                                    client.password_login,
-                                    mobile,
-                                    password,
-                                    company_id
+                                    client.auto_login,
+                                    mobile
                                 )
                                 if success:
                                     _LOGGER.info(f"✅ Re-login successful for {user_code}, retrying request...")

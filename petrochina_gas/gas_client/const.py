@@ -17,6 +17,12 @@ API_PASSWORD_LOGIN = "/api/v1/open/user/passwordLogin"
 API_GET_COMPANIES = "/api/v1/open/company/list"
 API_GET_RSA_PUBLIC_KEY = "/api/v1/open/encrypt/getRSA"
 
+# 免密自动登录链路（App凭证 → 应用token → 用户token）
+# queryClientInfo 返回静态 App 凭证（宿迁APP 9A61，用户查找是全局的，不限分公司）
+API_QUERY_CLIENT_INFO = "/api/v1/open/user/queryClientInfo/9A61"
+API_GET_AUTH_TOKEN = "/api/v1/open/user/getAuthToken"
+API_GET_USER_TOKEN = "/api/v1/open/user/getToken"
+
 # Request Parameters (根据抓包数据修正)
 PARAM_CID = "cid"
 PARAM_USER_CODE = "userCode"

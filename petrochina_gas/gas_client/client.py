@@ -13,6 +13,9 @@ from .const import (
     API_BASE,
     API_USER_AUTH,
     API_PASSWORD_LOGIN,
+    API_QUERY_CLIENT_INFO,
+    API_GET_AUTH_TOKEN,
+    API_GET_USER_TOKEN,
     API_GET_COMPANIES,
     API_GET_RSA_PUBLIC_KEY,
     API_CREATE_QR_CODE,
@@ -82,6 +85,7 @@ class GasHttpClient:
         self._open_id: Optional[str] = None
         self._union_id: Optional[str] = None
         self._mdm_code: Optional[str] = None
+        self._mobile: Optional[str] = None
         self._user_code_id: Optional[str] = None  # 缓存 userCodeId
 
         # 缓存 AES 密钥（用于密码登录）
@@ -261,6 +265,106 @@ class GasHttpClient:
     def is_logged_in(self) -> bool:
         """检查是否已登录"""
         return self._token is not None
+
+    def _decode_response(self, response: requests.Response) -> dict:
+        """解码API响应（服务端可能返回 base64 编码的 JSON 体）"""
+        content = response.content.decode("utf-8")
+        if content and not content.strip().startswith("{"):
+            try:
+                content = base64.b64decode(content).decode("utf-8")
+            except Exception:
+                pass
+        return json.loads(content)
+
+    def auto_login(self, mobile: str) -> bool:
+        """
+        免密自动登录（App凭证链路，无需密码/短信/图形验证码）
+
+        链路：queryClientInfo(静态App凭证) → getAuthToken(应用token,2h) → getToken(用户token)
+        只需手机号即可铸造用户 token，可无人值守重复调用：
+        - token 有效期 48h，refreshToken 有效期 180 天
+        - token 过期后重跑本链路即可，无任何人工交互
+
+        Args:
+            mobile: 手机号
+
+        Returns:
+            登录是否成功
+        """
+        try:
+            # 1. 获取应用凭证（公开静态凭证）
+            resp = self._make_request(API_QUERY_CLIENT_INFO, data={}, requires_auth=False)
+            result = self._decode_response(resp)
+            if not (result.get(FIELD_SUCCESS) or result.get(FIELD_SUCCESS_WITH_DATA)):
+                _LOGGER.error(f"auto_login: queryClientInfo 失败: {result.get(FIELD_MESSAGE)}")
+                return False
+            client_id = result.get(FIELD_DATA, {}).get("clientId")
+            client_secret = result.get(FIELD_DATA, {}).get("clientSecret")
+            if not client_id or not client_secret:
+                _LOGGER.error("auto_login: 未返回应用凭证")
+                return False
+
+            # 2. 铸造应用 authToken（短期有效，现取现用）
+            resp = self._make_request(
+                API_GET_AUTH_TOKEN,
+                data={"clientId": client_id, "secret": client_secret},
+                requires_auth=False,
+            )
+            result = self._decode_response(resp)
+            if not (result.get(FIELD_SUCCESS) or result.get(FIELD_SUCCESS_WITH_DATA)):
+                _LOGGER.error(f"auto_login: getAuthToken 失败: {result.get(FIELD_MESSAGE)}")
+                return False
+            auth_token = result.get(FIELD_DATA, {}).get("authToken")
+            if not auth_token:
+                _LOGGER.error("auto_login: 未返回 authToken")
+                return False
+
+            # 3. 用手机号铸造用户 token
+            resp = self._make_request(
+                API_GET_USER_TOKEN,
+                data={"authToken": auth_token, "mobile": mobile, "clientId": client_id},
+                requires_auth=False,
+            )
+            result = self._decode_response(resp)
+            if not (result.get(FIELD_SUCCESS) or result.get(FIELD_SUCCESS_WITH_DATA)):
+                _LOGGER.error(f"auto_login: getToken 失败: {result.get(FIELD_MESSAGE)}")
+                return False
+            data = result.get(FIELD_DATA, {})
+            token = data.get("token")
+            if not token:
+                _LOGGER.error("auto_login: 响应缺少 token")
+                return False
+
+            self._token = token
+            self._refresh_token = data.get("refreshToken")
+            self._mobile = mobile
+            self._session.headers["token"] = token
+
+            if data.get("mdmCode"):
+                self._mdm_code = data["mdmCode"]
+            elif not self._mdm_code and self.user_code:
+                # 兜底：从账户接口补 mdmCode
+                try:
+                    resp = self._make_request(
+                        API_GET_USER_DEBT,
+                        data={"cid": self.cid, "userCode": self.user_code,
+                              "terminalType": str(self.terminal_type)},
+                        requires_auth=False,
+                    )
+                    mdm = self._decode_response(resp).get(FIELD_DATA, {}).get("mdmCode")
+                    if mdm:
+                        self._mdm_code = mdm
+                except Exception:
+                    pass
+
+            _LOGGER.info(
+                f"auto_login 成功 "
+                f"(mobile={mobile[:3]}****{mobile[-4:]}, mdm={self._mdm_code})"
+            )
+            return True
+        except Exception as err:
+            _LOGGER.error(f"auto_login error: {err}")
+            return False
 
     def refresh_access_token(self) -> bool:
         """
