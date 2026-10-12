@@ -225,6 +225,29 @@ async def async_setup_entry(
     )
 
 
+_SUFFIX_SLUGS = {
+    "balance": "01_balance",
+    "arrears": "02_arrears",
+    "latest_day_kwh": "03_latest_day_kwh",
+    "latest_day_cost": "04_latest_day_cost",
+    "yesterday_kwh": "05_yesterday_kwh",
+    "this_month_total_usage": "06_this_month_usage",
+    "this_month_total_cost": "07_this_month_cost",
+    "last_month_total_usage": "08_last_month_usage",
+    "last_month_total_cost": "09_last_month_cost",
+    "this_year_total_usage": "10_this_year_usage",
+    "this_year_total_cost": "11_this_year_cost",
+    "this_year_bill_usage": "12_this_year_bill_usage",
+    "this_year_bill_cost": "13_this_year_bill_cost",
+    "last_year_total_usage": "14_last_year_usage",
+    "last_year_total_cost": "15_last_year_cost",
+    "current_ladder": "16_current_ladder",
+    "current_ladder_tariff": "17_ladder_tariff",
+    "current_ladder_remaining_kwh": "18_ladder_remaining_kwh",
+    "yearly_ladder_total_kwh": "19_yearly_ladder_kwh",
+}
+
+
 class CSGBaseSensor(
     CoordinatorEntity,
     SensorEntity,
@@ -244,6 +267,9 @@ class CSGBaseSensor(
         self._account_number = account_number
 
         self._entity_suffix = entity_suffix
+        self._attr_suggested_object_id = (
+            f"csg_{account_number}_{_SUFFIX_SLUGS.get(entity_suffix, entity_suffix)}"
+        )
         self._attr_extra_state_attributes = {}
         self._extra_state_attributes_key = extra_state_attributes_key
 

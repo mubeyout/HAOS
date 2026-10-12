@@ -197,6 +197,33 @@ def calculate_cost_by_ladder(
 # Base Sensor Class
 # ============================================
 
+_SUFFIX_SLUGS = {
+    "balance": "01_balance",
+    "owe_amount": "02_owe_amount",
+    "meter_reading": "03_meter_reading",
+    "last_communication": "04_last_communication",
+    "current_month_volume": "05_current_month_volume",
+    "current_month_cost": "06_current_month_cost",
+    "last_day_usage": "07_last_day_usage",
+    "last_day_usage_cost": "08_last_day_usage_cost",
+    "last_day_usage_time": "09_last_day_usage_time",
+    "monthly_volume": "10_monthly_volume",
+    "monthly_cost": "11_monthly_cost",
+    "recent_monthly_usage": "12_recent_monthly_usage",
+    "recent_monthly_cost": "13_recent_monthly_cost",
+    "yearly_volume": "14_yearly_volume",
+    "yearly_cost": "15_yearly_cost",
+    "ladder_stage": "16_ladder_stage",
+    "ladder_unit_price": "17_ladder_unit_price",
+    "last_payment": "18_last_payment",
+    "last_payment_date": "19_last_payment_date",
+    "customer_name": "20_customer_name",
+    "address": "21_address",
+    "gas_company": "22_gas_company",
+    "user_code": "23_user_code",
+}
+
+
 class GasBaseSensor(CoordinatorEntity, SensorEntity):
     """昆仑燃气传感器基类"""
 
@@ -211,6 +238,9 @@ class GasBaseSensor(CoordinatorEntity, SensorEntity):
         CoordinatorEntity.__init__(self, coordinator)
         self._account_number = account_number
         self._entity_suffix = entity_suffix
+        self._attr_suggested_object_id = (
+            f"gas_{account_number}_{_SUFFIX_SLUGS.get(entity_suffix, entity_suffix)}"
+        )
         self._attr_extra_state_attributes = {}
         self._attr_available = False
 

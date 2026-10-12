@@ -60,6 +60,23 @@ _LOGGER = logging.getLogger(__name__)
 # Base Sensor Class
 # ============================================
 
+_SUFFIX_SLUGS = {
+    "latest_usage": "01_latest_usage",
+    "latest_bill_amount": "02_latest_bill_amount",
+    "monthly_avg_usage": "03_monthly_avg_usage",
+    "two_month_usage": "04_two_month_usage",
+    "bill_water_fee": "05_bill_water_fee",
+    "bill_sewage_fee": "06_bill_sewage_fee",
+    "bill_garbage_fee": "07_bill_garbage_fee",
+    "bill_date": "08_bill_date",
+    "user_name": "09_user_name",
+    "caliber": "10_caliber",
+    "cycle": "11_cycle",
+    "address": "12_address",
+    "user_code": "13_user_code",
+}
+
+
 class WaterBaseSensor(CoordinatorEntity, SensorEntity):
     """昆明水务传感器基类"""
 
@@ -74,6 +91,9 @@ class WaterBaseSensor(CoordinatorEntity, SensorEntity):
         CoordinatorEntity.__init__(self, coordinator)
         self._account_number = account_number
         self._entity_suffix = entity_suffix
+        self._attr_suggested_object_id = (
+            f"water_{account_number}_{_SUFFIX_SLUGS.get(entity_suffix, entity_suffix)}"
+        )
         self._attr_extra_state_attributes = {}
         self._attr_available = False
 
